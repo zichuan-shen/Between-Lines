@@ -10,7 +10,7 @@ class Directory{
 }
 function stores(){return {cards:new Map(),assets:new Map(),settings:new Map()};}
 async function boot(data=stores(),parent=null){
- const env={data,fail:false,downloads:[],urls:new Map(),nodes:{},events:{},timers:[]};
+ const env={data,fail:false,confirmDelete:true,downloads:[],urls:new Map(),nodes:{},events:{},timers:[]};
  class Element{
   constructor(tag='DIV'){this.tagName=tag.toUpperCase();this.value='';this.files=[];this.children=[];this.events={};this.dataset={};this.attrs={};this.style={setProperty(k,v){this[k]=v;}};this.open=false;this.isConnected=true;this.classList={add(){},remove(){}};}
   addEventListener(k,fn){this.events[k]=fn;}setAttribute(k,v){this.attrs[k]=v;}append(...children){this.children.push(...children);}replaceChildren(...children){this.children=children;}focus(){document.activeElement=this;}showModal(){this.open=true;}close(){this.open=false;}remove(){}click(){if(this.download)env.downloads.push({name:this.download,blob:env.urls.get(this.href)});return this.onclick?.();}
@@ -29,7 +29,7 @@ async function boot(data=stores(),parent=null){
   return tx;
  }};
  const indexedDB={open:()=>{const r={result:db};setImmediate(()=>r.onsuccess());return r;}};
- vm.runInNewContext(source,{Image:class{constructor(){this.naturalWidth=1200;this.naturalHeight=800;}set src(v){queueMicrotask(()=>this.onload?.());}},LibraryCore:C,LibraryObsidian,document,window,navigator:{},indexedDB,showDirectoryPicker:async()=>parent,crypto,Blob,URL:class extends URL{static createObjectURL(blob){const key='blob:'+crypto.randomUUID();env.urls.set(key,blob);return key;}static revokeObjectURL(key){env.urls.delete(key);}},TextDecoder,confirm:()=>true,setTimeout:(fn,ms)=>{env.timers.push({fn,ms});return env.timers.length;},clearTimeout(){},Date,Math});
+ vm.runInNewContext(source,{Image:class{constructor(){this.naturalWidth=1200;this.naturalHeight=800;}set src(v){queueMicrotask(()=>this.onload?.());}},LibraryCore:C,LibraryObsidian,document,window,navigator:{},indexedDB,showDirectoryPicker:async()=>parent,crypto,Blob,URL:class extends URL{static createObjectURL(blob){const key='blob:'+crypto.randomUUID();env.urls.set(key,blob);return key;}static revokeObjectURL(key){env.urls.delete(key);}},TextDecoder,confirm:()=>env.confirmDelete,setTimeout:(fn,ms)=>{env.timers.push({fn,ms});return env.timers.length;},clearTimeout(){},Date,Math});
  await flush();env.window=window;env.get=get;return env;
 }
 (async()=>{
@@ -113,6 +113,34 @@ async function boot(data=stores(),parent=null){
  const missing=new Directory('缺少附件');
  await assert.rejects(LibraryObsidian.send(missing,card,async()=>null),/附件缺失/);
  assert.equal(missing.files.size,0);assert.equal(missing.dirs.size,0);
+ // Deleting a card keeps shared attachments, external exports, and other drafts.
+ const deletionData=stores(),sharedId=card.assets[0].id,uniqueId='only-on-deleted-card';
+ const removeCard={...card,assets:[...card.assets,{...card.assets[0],id:uniqueId}]};
+ const keepCard={...card,id:'uses-same-attachment',updatedAt:card.updatedAt-1};
+ deletionData.cards.set(removeCard.id,removeCard);
+ deletionData.cards.set(keepCard.id,keepCard);
+ deletionData.assets.set(sharedId,app.data.assets.get(sharedId));
+ deletionData.assets.set(uniqueId,{...app.data.assets.get(sharedId),id:uniqueId});
+ deletionData.settings.set('draft:'+removeCard.id,{kind:'creative-draft',card:removeCard,files:[]});
+ deletionData.settings.set('draft:'+keepCard.id,{kind:'creative-draft',card:keepCard,files:[]});
+ deletionData.settings.set('obsidianSent:'+removeCard.id,{filename:mdName});
+ const deletion=await boot(deletionData);
+ await deletion.get('libGrid').children[0].children[0].onclick();
+ deletion.confirmDelete=false;await deletion.get('libReaderDelete').onclick();
+ assert.equal(deletion.get('libReader').open,true);
+ assert.equal(deletionData.cards.size,2);
+ deletion.confirmDelete=true;deletion.fail=true;await deletion.get('libReaderDelete').onclick();
+ assert.match(deletion.get('libReaderObsidianStatus').textContent,/删除失败/);
+ assert.equal(deletionData.cards.size,2);
+ deletion.fail=false;await deletion.get('libReaderDelete').onclick();
+ assert.equal(deletion.get('libReader').open,false);
+ assert.deepEqual([...deletionData.cards.keys()],[keepCard.id]);
+ assert.deepEqual([...deletionData.assets.keys()],[sharedId]);
+ assert.equal(deletionData.settings.has('draft:'+removeCard.id),false);
+ assert.equal(deletionData.settings.has('draft:'+keepCard.id),true);
+ assert.equal(deletionData.settings.get('obsidianSent:'+removeCard.id).filename,mdName);
+ assert.match(deletion.get('libMessage').textContent,/已删除/);
+ assert.match(deletion.get('libCount').textContent,/1 \/ 1/);
  console.log('PASS: Obsidian Markdown, actual attachment paths and bytes, separate directory, permission/cancel, repeated send after rename, and no file overwrite.');
  console.log('PASS: optional titles, draft-free reader, multiple independent drafts, per-card save, legacy draft migration and note collection with original references.');
  console.log('PASS: library UI creation, binary attachment, draft resume, search, status editing, full ZIP restore into empty storage, local directory mirror and restore, revoked permission and failed-save preservation.');

@@ -28,9 +28,9 @@ async function boot(native=true) {
  return {el,data,calls,state,handle,revoked,mutate,async open(t){context.BannerPicker.open(t);await flush();}};
 }
 (async()=>{
- const app=await boot();await app.open('dark');assert.equal(app.el.bannerGrid.children.length,1);
- await app.el.bannerGrid.children[0].click();assert.equal(app.calls.at(-1)[1].preset,'wallpaper');assert.equal(app.calls.at(-1)[2],'dark');assert.equal(app.el.bannerPicker.open,false);
- await app.open('light');assert.equal(app.el.bannerGrid.children.length,1);await app.el.bannerGrid.children[0].click();assert.equal(app.calls.at(-1)[2],'light');
+ const app=await boot();await app.open('dark');assert.equal(app.el.bannerGrid.children.length,4);
+ await app.el.bannerGrid.children[2].click();assert.equal(app.calls.at(-1)[1].preset,'lucy');assert.equal(app.calls.at(-1)[2],'dark');assert.equal(app.el.bannerPicker.open,false);
+ await app.open('light');assert.equal(app.el.bannerGrid.children.length,2);await app.el.bannerGrid.children[1].click();assert.equal(app.calls.at(-1)[1].preset,'daylight');assert.equal(app.calls.at(-1)[2],'light');
  await app.open('dark');app.state.files=[new File(['a'],'夜航.png',{type:'image/png'}),new File(['bad'],'ignore.txt',{type:'text/plain'}),new File(['b'],'New.jpg',{type:''})];
  await app.el.bannerFolder.click();assert.equal(app.data.get('bannerDirectory.dark'),app.handle);assert.equal(app.data.has('bannerDirectory.light'),false);assert.equal(app.el.bannerGrid.children.length,2);
  const chosen=app.el.bannerGrid.children.find(button=>button.children[1].textContent==='夜航.png');await chosen.click();assert.equal(app.calls.at(-1)[1].name,'夜航.png');assert.equal(app.calls.at(-1)[3],'center top');assert.ok(app.revoked.length>=2);
@@ -41,7 +41,7 @@ async function boot(native=true) {
  const count=app.calls.filter(c=>c[0]==='select').length;app.state.cancel=true;await app.el.bannerFolder.click();assert.equal(app.el.bannerPicker.open,true);app.state.cancel=false;
  app.state.fail=true;await app.el.bannerGrid.children[0].click();assert.equal(app.el.bannerPicker.open,true);assert.match(app.el.bannerMessage.textContent,/原图片已保留/);assert.equal(app.calls.filter(c=>c[0]==='select').length,count);app.state.fail=false;
  const broken=app.el.bannerGrid.children[0];await broken.children[0].fire('error');assert.equal(broken.disabled,true);
- await app.el.bannerBuiltins.click();assert.equal(app.el.bannerGrid.children.length,1);
+ await app.el.bannerBuiltins.click();assert.equal(app.el.bannerGrid.children.length,4);
  await app.el.bannerUpload.click();assert.deepEqual(app.calls.at(-1),['upload','dark']);assert.equal(app.el.bannerPicker.open,false);
  await app.open('light');app.mutate();assert.equal(app.el.bannerPicker.open,false);
  // A gesture starting inside and ending outside must not dismiss the dialog.

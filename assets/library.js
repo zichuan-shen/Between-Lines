@@ -22,7 +22,7 @@
  async function get(store,key){const d=await open();return request(d.transaction(store).objectStore(store).get(key));}
  async function all(store){const d=await open();return request(d.transaction(store).objectStore(store).getAll());}
  async function setting(key,value){const d=await open();return new Promise((resolve,reject)=>{const t=d.transaction('settings','readwrite');if(value===undefined)t.objectStore('settings').delete(key);else t.objectStore('settings').put(value,key);t.oncomplete=resolve;t.onerror=t.onabort=()=>reject(t.error||Error('保存失败'));});}
- function locked(value){busy=value;$('libForm').inert=value;for(const id of ['libSave','libBind','libSync','libExport','libImport'])$(id).disabled=value;}
+ function locked(value){busy=value;$('libForm').inert=value;for(const id of ['libSave','libBind','libSync','libExport','libImport'])$(id).disabled=value;$('libReaderDelete').disabled=busy||obsidianBusy;}
  function error(e){return e?.name==='QuotaExceededError'?'本浏览器存储空间不足，请先导出备份或绑定目录。':e?.message||'操作失败，请稍后重试。';}
  function storageStatus(){
   const dirty=lastSync?.revision!==revision;
@@ -112,7 +112,24 @@
  $('libReader').addEventListener('pointercancel',()=>{readerBackdropPress=false;});
  $('libReader').addEventListener('click',event=>{const dismiss=readerBackdropPress&&outsideReader(event);readerBackdropPress=false;if(dismiss)$('libReaderClose').click();});
 
- $('libReaderEdit').onclick=async()=>{const c=readerCard;$('libReader').close();clearReader();await edit(c);};
+ $('libReaderEdit').onclick=async()=>{if(busy)return;const c=readerCard;$('libReader').close();clearReader();await edit(c);};
+ $('libReaderDelete').onclick=async()=>{
+  const dialog=$('libReader'),card=readerCard,generation=readerGeneration,status=$('libReaderObsidianStatus');
+  if(!dialog.open||!card||busy||obsidianBusy)return;
+  if(!confirm('删除「'+card.title+'」？这条灵感和它的编辑草稿将从素材库移除，原便签和已导出的笔记会保留。'))return;
+  locked(true);status.textContent='正在删除…';
+  try{
+   await draftQueue.catch(()=>{});
+   await deleteCard(card);
+   if(dialog.open&&generation===readerGeneration)$('libReaderClose').click();
+   scheduleSync();
+   say('已删除灵感。');
+   await Promise.all([refresh(),updateDraftButton()]);
+  }catch(e){
+   if(dialog.open&&generation===readerGeneration)status.textContent=error(e);
+   else say(error(e));
+  }finally{locked(false);}
+ };
  $('libReaderToNotes').onclick=async()=>{if(!readerCard)return;try{if(!window.CreativeNotes)throw Error('便签尚未就绪。');window.CreativeNotes.fromLibrary(readerCard);$('libReader').close();clearReader();}catch(e){$('libReaderMessage').textContent=error(e);}};
  $('libReaderOrigin').onclick=()=>{if(window.CreativeNotes?.reveal(readerCard?.originNoteId)){$('libReader').close();clearReader();}else $('libReaderMessage').textContent='原便签未在当前浏览器中找到；素材内容仍然保留。';};
  function paintObsidianTarget(){
@@ -121,6 +138,7 @@
  }
  function obsidianWorking(value){
   obsidianBusy=value;$('libReaderObsidian').disabled=$('libObsidianBind').disabled=value;
+  $('libReaderDelete').disabled=busy||obsidianBusy;
  }
  async function chooseObsidianDirectory(){
   if(!window.showDirectoryPicker)throw Error('当前浏览器无法写入收件箱，请使用 Chrome 或 Edge 打开看板。');
@@ -138,7 +156,7 @@
   finally{obsidianWorking(false);}
  };
  $('libReaderObsidian').onclick=async()=>{
-  if(!readerCard||obsidianBusy)return;
+  if(!readerCard||busy||obsidianBusy)return;
   const card=readerCard,generation=readerGeneration,receiptKey='obsidianSent:'+card.id;
   const report=message=>{
    if(generation===readerGeneration&&$('libReader').open)$('libReaderObsidianStatus').textContent=message;
@@ -175,9 +193,31 @@
  }
  async function writeCard(c){
   const d=await open();return new Promise((resolve,reject)=>{
-   const t=d.transaction(['cards','assets','settings'],'readwrite');let conflict=false;
-   const r=t.objectStore('cards').get(c.id);r.onsuccess=()=>{if(editing&&r.result&&r.result.updatedAt!==editing.updatedAt){conflict=true;t.abort();return;}t.objectStore('cards').put(c);for(const file of files)t.objectStore('assets').put(file);t.objectStore('settings').delete(draftKey);t.objectStore('settings').put(uid(),'revision');};
-   t.oncomplete=resolve;t.onabort=t.onerror=()=>reject(Error(conflict?'这条素材已在另一窗口更新，请关闭编辑器并重新打开。':'素材保存失败，请检查浏览器存储空间。'));
+   const t=d.transaction(['cards','assets','settings'],'readwrite');let conflict='';
+   const r=t.objectStore('cards').get(c.id);r.onsuccess=()=>{if(editing&&(!r.result||r.result.updatedAt!==editing.updatedAt)){conflict=r.result?'这条素材已在另一窗口更新，请关闭编辑器并重新打开。':'这条素材已被删除。请把仍需保留的内容复制到一条新灵感。';t.abort();return;}t.objectStore('cards').put(c);for(const file of files)t.objectStore('assets').put(file);t.objectStore('settings').delete(draftKey);t.objectStore('settings').put(uid(),'revision');};
+   t.oncomplete=resolve;t.onabort=t.onerror=()=>reject(Error(conflict||'素材保存失败，请检查浏览器存储空间。'));
+  });
+ }
+ async function deleteCard(card){
+  const d=await open();
+  return new Promise((resolve,reject)=>{
+   const tx=d.transaction(['cards','assets','settings'],'readwrite');
+   const storedCards=tx.objectStore('cards'),assets=tx.objectStore('assets'),settings=tx.objectStore('settings');
+   const req=storedCards.getAll();let conflict=false;
+   req.onsuccess=()=>{
+    const current=req.result.find(item=>item.id===card.id);
+    if(!current)return;
+    if(current.updatedAt!==card.updatedAt){conflict=true;tx.abort();return;}
+    const remainingAssets=new Set(req.result.filter(item=>item.id!==card.id).flatMap(item=>item.assets.map(asset=>asset.id)));
+    storedCards.delete(card.id);
+    for(const asset of current.assets){
+     if(!remainingAssets.has(asset.id))assets.delete(asset.id);
+    }
+    settings.delete('draft:'+card.id);
+    settings.put(uid(),'revision');
+   };
+   tx.oncomplete=resolve;
+   tx.onabort=tx.onerror=()=>reject(Error(conflict?'这条灵感已更新，请重新打开后再删除。':'删除失败，这条灵感仍然保留。'));
   });
  }
  async function directoryPermission(interactive){if(!dir)return false;let p=await dir.queryPermission({mode:'readwrite'});if(p!=='granted'&&interactive)p=await dir.requestPermission({mode:'readwrite'});return p==='granted';}

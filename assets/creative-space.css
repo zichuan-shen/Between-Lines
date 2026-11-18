@@ -181,6 +181,8 @@ html .focus-view:fullscreen .focus-heading{height:auto;min-height:0;padding:0;ma
 .library-reader[open]{display:flex;flex-direction:column}
 .library-reader-chrome{flex:none;border-bottom:1px solid var(--line);background:var(--lib-paper)}
 .library-reader-chrome>.library-dialog-head{justify-content:flex-end;gap:10px;padding:12px 20px;margin:0;flex-wrap:wrap}
+.library-reader-chrome .library-reader-delete{color:#ff9fae}
+html[data-theme="light"] .library-reader-chrome .library-reader-delete{color:#a3313a}
 .library-reader #libReaderObsidian{margin-right:auto}
 .library-reader-status{margin:-3px 20px 12px;color:var(--ink);font-size:11px;line-height:1.55;overflow-wrap:anywhere}
 .library-reader-status:empty{display:none}

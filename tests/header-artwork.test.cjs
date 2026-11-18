@@ -43,7 +43,7 @@ async function boot(saved,initialTheme='dark'){
  app.state.deferDecode=true;const pending=app.upload(dark);await app.flip('dark');app.state.decode();await pending;assert.equal(app.visible(),undefined);assert.equal(app.state.saved.get('headerImage.light'),dark);await app.flip('light');assert.equal(app.visible(),dark);
  app.state.deferDecode=false;
  await app.api.select({preset:'wallpaper'},'dark');await app.flip('dark');
- assert.match(app.elements.headerArtwork.style.backgroundImage,/夜航/);
+ assert.match(app.elements.headerArtwork.style.backgroundImage,/蓝色夜景/);
  assert.equal(app.elements.headerArtwork.style.backgroundPosition,'center top');
  await app.api.select(dark,'dark','center top');assert.equal(app.visible(),dark);
  assert.equal(app.elements.headerArtwork.style.backgroundPosition,'center top');
