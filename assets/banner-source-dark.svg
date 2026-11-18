@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560" fill="none">
+  <defs>
+    <linearGradient id="night" x1="350" y1="120" x2="1315" y2="575" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101521"/><stop offset=".6" stop-color="#152c3d"/><stop offset="1" stop-color="#231f3d"/>
+    </linearGradient>
+    <radialGradient id="moon">
+      <stop stop-color="#d4fcff"/><stop offset=".7" stop-color="#89c5dd"/><stop offset="1" stop-color="#6b9eb8"/>
+    </radialGradient>
+    <linearGradient id="page" x1="555" y1="450" x2="1137" y2="170" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#97e3e5" stop-opacity="0"/><stop offset=".55" stop-color="#97e3e5" stop-opacity=".72"/><stop offset="1" stop-color="#b6a6ee" stop-opacity=".25"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#night)" d="M0 0h1400v560H0z"/>
+  <circle cx="1050" cy="155" r="107" fill="#8edfe7" fill-opacity=".1"/>
+  <circle cx="1050" cy="155" r="77" fill="url(#moon)"/>
+  <path d="M306 560c279-67 350-387 614-387 202 0 233 164 480 137v250H306Z" fill="#192838"/>
+  <path d="M381 560c222-39 346-340 538-340 178 0 232 172 481 136v204H381Z" fill="#242843"/>
+  <g stroke="url(#page)" stroke-width="2">
+    <path d="M306 560c279-67 350-387 614-387 202 0 233 164 480 137"/>
+    <path d="M381 560c222-39 346-340 538-340 178 0 232 172 481 136"/>
+    <path d="M459 560c170-19 333-298 466-298 185 0 216 165 475 141"/>
+  </g>
+  <g fill="#aadee7"><circle cx="750" cy="139" r="3"/><circle cx="883" cy="70" r="4"/><circle cx="1154" cy="78" r="3"/><circle cx="1221" cy="185" r="2"/><circle cx="627" cy="245" r="2" opacity=".5"/></g>
+</svg>

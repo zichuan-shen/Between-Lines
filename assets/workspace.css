@@ -1,0 +1,43 @@
+.workspace-nav{display:grid;gap:7px}
+.workspace-nav .view-link{display:flex}
+.view-link{display:flex;align-items:center;gap:12px;width:100%;padding:12px;font:400 12px var(--body);text-align:left;color:var(--mut);background:transparent;border:1px solid transparent;border-radius:8px;white-space:nowrap}
+.view-link>span{font-size:19px;line-height:1.2}
+.view-link i{margin-left:auto;width:5px;height:5px;border-radius:50%;opacity:0}
+.view-link:hover{background:#ffffff06;color:var(--ink)}
+.view-link.rail-current{background:#303b2e;border-color:#43503c;color:#c5d7ba}
+.view-link.rail-current i{background:#a5bd9b;opacity:1}
+[hidden]{display:none!important}
+.garden-view{padding-top:22px}
+.garden-stage{display:flex;flex:1;flex-direction:column;min-height:0;border:1px solid var(--line);border-radius:12px;background:#f5f4f0;color-scheme:light}
+html[data-theme="dark"] .garden-stage{background:#101b2b;color-scheme:dark}
+.garden-view iframe{display:block;flex:1;width:100%;height:0;min-height:0;border:0;border-radius:inherit;visibility:hidden}
+html[data-theme="dark"] .garden-view iframe[data-garden-theme="dark"],
+html[data-theme="light"] .garden-view iframe[data-garden-theme="light"]{visibility:visible}
+@media(max-width:1000px){
+  .workspace-rail{flex-wrap:wrap;gap:12px 20px}
+  .workspace-nav{display:flex;order:3;width:100%;gap:8px}
+  .view-link{width:auto;min-width:132px;padding:9px 12px}
+}
+@media(max-width:760px){.garden-view{padding-top:16px}.view-link{font-size:11px;min-width:125px}}
+
+/* One viewport shared by navigation, toolbar and garden. */
+html[data-view="garden"],html[data-view="garden"] body{height:100%;overflow:hidden}
+html[data-view="garden"] body{height:100dvh;display:flex;flex-direction:column}
+html[data-view="garden"] main{flex:1;min-height:0;display:flex;flex-direction:column;width:calc(100% - 220px)}
+html[data-view="garden"] .workspace-topline{flex:none}
+html[data-view="garden"] .garden-view{flex:1;min-height:0;padding-top:14px}
+@media(max-width:1250px){html[data-view="garden"] main{width:calc(100% - 185px)}}
+@media(max-width:1000px){html[data-view="garden"] main{width:100%}html[data-view="garden"] .workspace-rail{flex:none}}
+
+
+
+
+
+
+
+
+
+
+
+
+html[data-view="garden"] .garden-view{display:flex;flex-direction:column}

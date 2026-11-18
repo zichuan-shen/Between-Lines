@@ -1,0 +1,47 @@
+.artwork-controls{position:absolute;z-index:3;top:10px;right:12px;display:flex;gap:6px}
+.artwork-controls button{font-size:11px;line-height:1.5;padding:6px 9px;color:#e5e9dc;background:#25332bd9;border:1px solid #a4b59455;border-radius:5px;backdrop-filter:blur(8px)}
+.artwork-controls button:hover{background:#384937}.artwork-controls button:disabled{opacity:.55;cursor:wait}
+.artwork-status{position:absolute;z-index:3;left:16px;right:12px;bottom:32px;color:#eef2e5;background:#26382bdb;border-radius:5px;font-size:11px;line-height:1.7;padding:6px 9px;max-width:350px}
+.artwork-status:empty{display:none}
+.hud{--hero-banner-height:286px;--headline-space:128px;--headline-size:clamp(32px,2.45vw,46px)}
+.hud:not(:has(.headline-form:not([hidden]))){grid-template-rows:calc(var(--hero-banner-height) - var(--hud-top-space)) auto;min-height:0}
+.hud:not(:has(.headline-form:not([hidden]))) .hero-copy{display:flex;flex-direction:column;min-width:0;min-height:0;padding-bottom:12px}
+.hud .headline-area{flex:none;min-width:0}
+.hud:not(:has(.headline-form:not([hidden]))) .spacer{flex:1;min-height:0;overflow:auto}
+.hud .hero-title{font-size:var(--headline-fit,var(--headline-size));line-height:1.35;max-block-size:var(--headline-space);overflow:hidden}
+.hud .hero-title.hero-title-long{--headline-size:clamp(26px,2.25vw,36px);line-height:1.35}
+@media(max-width:1250px){.hud{--hero-banner-height:260px;--headline-space:108px}}
+@media(max-width:760px){
+  .hud{--hero-banner-height:218px;--headline-space:98px;--headline-size:clamp(22px,4.1vw,30px)}
+  .hud .hero-title.hero-title-long{--headline-size:21px}
+  .hud .hero-title{margin-bottom:12px}
+}
+.hero-visual:has(.artwork-controls){mask-image:none;-webkit-mask-image:none}
+.hud .hero-visual{
+  margin-top:calc(0px - var(--hud-top-space));
+  min-height:calc(var(--hero-visual-min-height) + var(--hud-top-space));
+}
+.hero-visual .hud-art{
+  --banner-mask:linear-gradient(90deg,transparent 0%,#000 24%,#000 78%,transparent 100%),linear-gradient(180deg,#000b 0%,#000 8px,#000 84%,transparent 100%);
+  inset:0;
+  -webkit-mask-image:var(--banner-mask);
+  -webkit-mask-composite:source-in;
+  mask-image:var(--banner-mask);
+  mask-composite:intersect;
+}
+.hero-visual .hud-art.custom-artwork{inset:0;background-position:center;background-size:cover;opacity:.8;filter:saturate(.85)}
+.hud:hover .hud-art.custom-artwork{opacity:.85}
+html[data-theme="light"] .artwork-controls button{color:#3e5546;background:#f3f1e7e8;border-color:#b8c4b1}
+html[data-theme="light"] .artwork-controls button:hover{background:#e5e9dc}
+html[data-theme="light"] .artwork-status{background:#f3f1e7ed;color:#435b48;border:1px solid #c8d0bf}
+html[data-theme="light"] .hero-visual .hud-art.custom-artwork{opacity:.7;filter:saturate(.8)}
+@media(max-width:760px){.artwork-controls{top:4px;right:4px;gap:4px}.artwork-controls button{font-size:10px;padding:5px 6px}.artwork-status{font-size:10px;left:4px;right:4px;bottom:28px}.hero-visual{min-width:0}}
+
+/* Compact corner tools, with names supplied through tooltips and accessibility labels. */
+.artwork-controls :is(#artworkChoose,#artworkReset){display:inline-grid;place-items:center;width:32px;height:32px;padding:0;border-radius:7px;cursor:pointer}
+.artwork-controls svg{display:block;width:17px;height:17px;pointer-events:none}
+.artwork-controls :is(#artworkChoose,#artworkReset):disabled{cursor:wait}
+
+/* Bundled theme defaults; custom images continue to use their own centered crop. */
+html[data-theme="dark"] .hero-visual .hud-art:not(.custom-artwork){background-image:url('../Banner/暗色/夜航.png');background-position:center top;background-size:cover}
+html[data-theme="light"] .hero-visual .hud-art:not(.custom-artwork){background-image:url('../Banner/亮色/纸间.png');background-position:center;background-size:cover}

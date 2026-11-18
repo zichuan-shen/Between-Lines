@@ -1,0 +1,30 @@
+const assert=require('node:assert/strict'),C=require('../assets/notes-core.js');
+const base=C.create('note-a',1000);assert.equal(base.w,320);assert.equal(base.h,280);assert.equal(C.title(base),'无标题便签');
+const text=C.change(base,'text',{text:'第一行自动作标题\n第二行'},2000);assert.equal(C.title(text),'第一行自动作标题');
+const dragged=C.change(text,'layout',{x:-20,y:25000,w:1,h:9999,z:4},3000);
+assert.equal(dragged.x,0);assert.equal(dragged.y,12000);assert.equal(dragged.w,240);assert.equal(dragged.h,900);assert.equal(dragged.stamps.text,2000,'Moving must not change content edit time');
+const a=C.change(text,'pin',{pinned:true},4000),b=C.change(C.create('note-b',5000),'text',{title:'另一张'},6000);
+let data={...C.empty(),notes:[b,a]};assert.equal(C.list(data,'active')[0].id,a.id);assert.equal(C.list(data,'active','第二行').length,1);
+let hidden=C.transition(a,'hidden',7000),trashed=C.transition(hidden,'trash',8000);assert.equal(trashed.previousState,'hidden');assert.equal(C.transition(trashed,trashed.previousState,9000).state,'hidden');
+let changed=C.change(text,'text',{text:'修改后的内容'},10000);changed=C.checkpoint(changed,text);assert.equal(changed.versions[0].text,text.text);
+for(let i=0;i<10;i++){const before=changed;changed=C.checkpoint(C.change(changed,'text',{text:'版本 '+i},11000+i),before);}assert.equal(changed.versions.length,5);
+assert.throws(()=>C.change(base,'text',{text:'x'.repeat(20001)},1000),/正文/);assert.throws(()=>C.parse('{}'),/备份/);assert.throws(()=>C.parse('{broken'),/JSON/);
+assert.throws(()=>C.state({...data,notes:[a,a]}),/重复/);assert.throws(()=>C.state({...data,version:77}),/备份/);
+const html=C.change(base,'text',{title:'<img onerror=alert(1)>',text:'<script>alert(1)</script>'},7000);assert.equal(C.parse(JSON.stringify({...C.empty(),notes:[html]})).notes[0].text,html.text,'Plain text round-trips verbatim');
+// Merge individual properties so a remote move cannot overwrite newer text.
+const left=C.change(text,'text',{text:'窗口 A 的正文'},8000),right=C.change(text,'layout',{x:160,w:420},9000);
+const merged=C.merge({...C.empty(),notes:[left]},{...C.empty(),notes:[right]});assert.equal(merged.notes[0].text,left.text);assert.equal(merged.notes[0].x,160);assert.equal(merged.notes[0].w,420);
+assert.equal(JSON.stringify(C.merge(merged,merged)),JSON.stringify(merged),'Importing the same backup is idempotent');
+const remote=C.change(text,'text',{text:'窗口 B 的正文'},8500);
+const conflict=C.reconcile({...C.empty(),notes:[left]},{...C.empty(),notes:[remote]},{...C.empty(),notes:[text]},()=> 'conflict-copy',10000);
+assert.equal(conflict.copies.length,1);assert.equal(conflict.data.notes.find(n=>n.id==='note-a').text,remote.text);assert.equal(conflict.data.notes.find(n=>n.id==='conflict-copy').text,left.text);
+const purged=C.purge({...C.empty(),notes:[text]},['note-a'],9000);assert.equal(purged.notes.length,0);assert.equal(C.merge(purged,{...C.empty(),notes:[left]}).notes.length,0,'A stale backup cannot resurrect a permanently deleted ID');
+const deleteConflict=C.reconcile({...C.empty(),notes:[left]},purged,{...C.empty(),notes:[text]},()=> 'surviving-draft',10000);assert.equal(deleteConflict.data.notes.length,1);assert.equal(deleteConflict.data.notes[0].id,'surviving-draft');
+const arrangement=C.arrange([a,b],800,10000);assert.ok(arrangement[1].x>arrangement[0].x);assert.equal(arrangement[0].stamps.text,a.stamps.text);
+const allStates={...C.empty(),notes:[text,hidden.id===b.id?hidden:{...hidden,id:'note-hidden'}, {...trashed,id:'note-trash'}]};assert.equal(C.parse(JSON.stringify(allStates)).notes.length,3);
+console.log('PASS: plain text, title fallback, bounds, list pin/search, reversible states, five content versions, validation, portable backup, field-level merge, conflict copies, permanent deletion and layout-independent edit dates.');
+
+const wide=C.change(a,'layout',{w:650,h:490},12000),tall=C.change(b,'layout',{w:260,h:700},12001),preserved=C.arrange([wide,tall],1000,14000);assert.equal(preserved[0].w,650);assert.equal(preserved[1].h,700);assert.ok(preserved[1].x>=preserved[0].x+preserved[0].w||preserved[1].y>=preserved[0].y+preserved[0].h);
+let session=C.checkpoint(C.change(text,'text',{text:'段落 A'},500000),text,false);const firstVersion=session.versions[0];for(let i=0;i<8;i++){const previous=session;session=C.checkpoint(C.change(session,'text',{text:'段落 '+i},500100+i),previous,false);}assert.ok(session.versions.some(v=>v.text===firstVersion.text),'Rapid autosaves do not exhaust meaningful history');
+const related=C.change(text,'idea',{group:'思考空间',libraryId:'lib-1',parentId:'parent-1'},90000);assert.equal(C.parse(JSON.stringify({...C.empty(),notes:[related]})).notes[0].libraryId,'lib-1');assert.equal(C.merge({...C.empty(),notes:[related]},{...C.empty(),notes:[text]}).notes[0].group,'思考空间');
+console.log('PASS: legacy note compatibility, relationship backup/merge, meaningful history and variable-sized nonoverlapping arrangement.');

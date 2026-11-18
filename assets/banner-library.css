@@ -1,0 +1,84 @@
+/* Theme-local image shelf. The header stays fixed while the choices scroll. */
+.banner-picker{--bp-bg:#141d2c;--bp-card:#1d293b;--bp-ink:#dfe8f2;--bp-muted:#9aaec3;--bp-line:#35485e;--bp-accent:#8ddce7;
+ width:min(850px,calc(100vw - 36px));max-height:min(760px,calc(100dvh - 48px));padding:0;box-sizing:border-box;
+ color:var(--bp-ink);background:var(--bp-bg);border:1px solid var(--bp-line);border-radius:18px;box-shadow:0 28px 100px #0007}
+.banner-picker[open]{display:flex;flex-direction:column}
+.banner-picker::backdrop{background:#080c16a6;backdrop-filter:blur(7px)}
+.banner-picker-head{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 26px 16px;flex-shrink:0}
+.banner-picker h2{font-family:'Songti SC','STSong','SimSun',serif;font-size:25px;font-weight:400;letter-spacing:1px;margin:0 0 6px}
+.banner-location{font-size:11px;color:var(--bp-muted)}
+.banner-picker button{font:12px var(--body,sans-serif);color:var(--bp-ink);background:var(--bp-card);border:1px solid var(--bp-line);border-radius:7px;cursor:pointer;padding:8px 12px}
+.banner-picker button:hover{border-color:var(--bp-accent)}
+.banner-picker button:focus-visible{outline:2px solid var(--bp-accent);outline-offset:3px}
+.banner-picker button:disabled{opacity:.5;cursor:wait}
+.banner-picker #bannerClose{font-size:23px;width:34px;height:34px;padding:0;background:transparent}
+.banner-picker-toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:0 26px 16px;border-bottom:1px solid var(--bp-line);flex-shrink:0}
+.banner-picker #bannerUpload{margin-left:auto}
+.banner-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:24px 26px;overflow:auto;overscroll-behavior:contain;min-height:0}
+.banner-grid .banner-choice{padding:0;overflow:hidden;text-align:left;display:flex;flex-direction:column;border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.banner-grid .banner-choice:hover{box-shadow:0 0 0 1px var(--bp-accent)}
+.banner-choice img{display:block;width:100%;aspect-ratio:2.7;object-fit:cover;background:var(--bp-bg)}
+.banner-choice span{padding:11px 13px;font-size:12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:100%;box-sizing:border-box}
+.banner-message{margin:0;padding:14px 26px 20px;color:var(--bp-muted);font-size:12px;line-height:1.7;border-top:1px solid var(--bp-line);flex-shrink:0}
+.banner-empty{grid-column:1/-1;color:var(--bp-muted);font-size:13px;line-height:1.8;padding:30px 0}
+html[data-theme="light"] .banner-picker{--bp-bg:#f5f4f0;--bp-card:#fff;--bp-ink:#252a28;--bp-muted:#737a76;--bp-line:#dcddd7;--bp-accent:#363c38}
+@media(max-width:550px){.banner-grid{grid-template-columns:1fr;padding:16px}.banner-picker-head{padding:18px 16px 14px}.banner-picker-toolbar{padding:0 16px 14px}.banner-message{padding:12px 16px}.banner-picker #bannerUpload{margin-left:0}}
+
+/* No portrait-tracking rings: the motion belongs to the frame, not the subject. */
+.hero-visual .orbit{display:none;animation:none}
+.banner-atmosphere{display:none;position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1;isolation:isolate;
+ mask-image:linear-gradient(90deg,transparent,#000 12%,#000 87%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 87%,transparent)}
+html[data-theme="dark"] .banner-atmosphere{display:block}
+.banner-atmosphere::before,.banner-atmosphere::after{content:'';position:absolute;pointer-events:none}
+.banner-atmosphere::before{inset:-25% -12%;background:radial-gradient(ellipse 28% 42% at 12% 74%,#59d8f035,transparent 85%),radial-gradient(ellipse 30% 45% at 88% 22%,#b380ef30,transparent 85%);filter:blur(15px);opacity:.55}
+.banner-atmosphere::after{left:7%;right:7%;bottom:0;height:1px;background:linear-gradient(90deg,transparent 12%,#70d8ed25 28%,#b4efff95 44%,#d3abff60 54%,transparent 70%) -150% 0 / 50% 100% no-repeat;opacity:.75}
+.banner-atmosphere i{position:absolute;left:var(--x);top:var(--y);width:var(--s,2px);height:var(--s,2px);border-radius:50%;background:#c8e8f7;box-shadow:0 0 6px #7ddcfb65;opacity:0}
+.banner-atmosphere i:nth-child(3n){background:#d8c8f7;box-shadow:0 0 7px #b19bea65}
+.banner-day-depth,.banner-day-motes{display:none;position:absolute;inset:0;pointer-events:none}
+html[data-theme="light"] .banner-day-depth{display:block;background:radial-gradient(ellipse 62% 65% at 64% 47%,#ffffff6b,transparent 79%)}
+.banner-day-halo{
+ position:absolute;inset:-12%;opacity:.72;
+ background:radial-gradient(ellipse 24% 56% at 27% 53%,#fff9edb8,transparent 86%),radial-gradient(ellipse 16% 32% at 86% 12%,#ffffff90,transparent 88%);
+}
+.banner-day-motes{z-index:1}
+.banner-day-motes i{
+ position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);border-radius:50%;
+ background:#919a94;box-shadow:0 0 0 1px #ffffff85,0 0 7px #fffc;opacity:.32;
+}
+.banner-day-motes i:nth-child(3n){background:#fff;box-shadow:0 0 0 1px #7d8b822a,0 0 9px 2px #fff;--mote-peak:.72}
+@media(prefers-reduced-motion:no-preference){
+ html[data-theme="dark"] .banner-atmosphere::before{animation:bannerAmbientDrift 19s ease-in-out infinite alternate}
+ html[data-theme="dark"] .banner-atmosphere::after{animation:bannerEdgeLight 14s ease-in-out infinite}
+ html[data-theme="dark"] .banner-atmosphere i{animation:bannerDust var(--duration,17s) linear var(--delay,0s) infinite}
+ html[data-theme="light"] .hero-visual{--banner-x:0px;--banner-y:0px}
+ html[data-theme="light"] .hero-visual .hud-art{
+  transform:translate3d(var(--banner-x),var(--banner-y),0) scale(1.025);
+  transition:transform .55s cubic-bezier(.2,.7,.3,1),opacity .6s;
+ }
+ html[data-theme="light"] .banner-day-depth{
+  transform:translate3d(calc(var(--banner-x) * -.42),calc(var(--banner-y) * -.42),0);
+  transition:transform .7s cubic-bezier(.2,.7,.3,1);
+ }
+ html[data-theme="light"] .banner-day-halo{animation:bannerDaylight 17s ease-in-out -4s infinite}
+ html[data-theme="light"] .banner-day-motes{
+  display:block;
+  transform:translate3d(calc(var(--banner-x) * 1.35),calc(var(--banner-y) * 1.35),0);
+  transition:transform .65s cubic-bezier(.2,.7,.3,1);
+ }
+ html[data-theme="light"] .banner-day-motes i{animation:bannerDayMote 16s ease-in-out var(--delay) infinite}
+ .banner-day-motes i:nth-child(2n),.banner-atmosphere i:nth-child(3n){display:none}
+}
+@media(max-width:760px){.banner-day-motes i:nth-child(even){display:none}}
+@keyframes bannerDaylight{
+ 0%,100%{transform:translate3d(-2%,1%,0);opacity:.40}
+ 50%{transform:translate3d(3%,-1%,0);opacity:.68}
+}
+@keyframes bannerDayMote{
+ 0%,100%{transform:translate3d(-7px,6px,0);opacity:.23}
+ 32%{transform:translate3d(4px,-5px,0);opacity:var(--mote-peak,.48)}
+ 64%{transform:translate3d(13px,-12px,0);opacity:.29}
+}
+@keyframes bannerAmbientDrift{0%{transform:translate3d(-2%,2%,0) scale(.98);opacity:.4}55%{opacity:.8}100%{transform:translate3d(3%,-3%,0) scale(1.05);opacity:.55}}
+@keyframes bannerEdgeLight{0%,10%{background-position:-120% 0;opacity:0}25%{opacity:.75}80%{opacity:.6}100%{background-position:220% 0;opacity:0}}
+@keyframes bannerDust{0%{transform:translate3d(-14px,15px,0);opacity:0}20%{opacity:.45}55%{opacity:.24}80%{opacity:.5}100%{transform:translate3d(32px,-24px,0);opacity:0}}
+.hero-visual.banner-motion-paused .banner-atmosphere::before,.hero-visual.banner-motion-paused .banner-atmosphere::after,.hero-visual.banner-motion-paused :is(.banner-atmosphere i,.banner-day-halo,.banner-day-motes i){animation-play-state:paused}

@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行间 · Between Lines</title>
+<link rel="icon" type="image/x-icon" href="assets/brand-mark.ico">
+<script src="assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ============ 基础与调色盘(深潭墨绿 + 多档"稀有度"暖色) ============ */
+:root{
+  --bg0:#0d1417; --bg1:#101a1e; --panel:#15232a; --panel2:#182a32;
+  --line:#27393f; --line2:#31464e;
+  --ink:#e9f1ec; --mut:#93a9a0; --dim:#5f7a72;
+  --gold:#f5c354; --gold-soft:rgba(245,195,84,.14);
+  --teal:#52cdb6; --teal-soft:rgba(82,205,182,.13);
+  --rose:#f57f6c;  --blue:#6fb2f2;  --purple:#b28df0; --jade:#57cf8f;
+  --mono:'JetBrains Mono',Consolas,monospace;
+  --disp:'ZCOOL QingKe HuangYou','Noto Sans SC',sans-serif;
+  --body:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--body); color:var(--ink); min-height:100vh;
+  background:
+    radial-gradient(1000px 480px at 8% -6%, rgba(245,195,84,.09), transparent 60%),
+    radial-gradient(900px 520px at 96% 2%, rgba(82,205,182,.07), transparent 60%),
+    radial-gradient(700px 700px at 50% 115%, rgba(111,178,242,.05), transparent 60%),
+    linear-gradient(var(--bg1),var(--bg0));
+  background-attachment:fixed;
+}
+body::before{ /* 细网格底纹 */
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:34px 34px;
+  mask-image:radial-gradient(ellipse 90% 80% at 50% 20%,#000 30%,transparent 100%);
+}
+#emberLayer{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+.ember{position:absolute; bottom:-12px; border-radius:2px; opacity:0;
+  animation:rise linear infinite}
+@keyframes rise{
+  0%{transform:translateY(0) rotate(0); opacity:0}
+  8%{opacity:var(--o)} 80%{opacity:var(--o)}
+  100%{transform:translateY(-108vh) rotate(220deg); opacity:0}
+}
+main{position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:20px 22px 40px}
+::selection{background:rgba(245,195,84,.35)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#2c4048;border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+button{font-family:inherit; cursor:pointer}
+input,textarea,select{font-family:inherit; color:var(--ink)}
+
+/* ============ 顶部 HUD:游戏抬头状态栏(双行布局 + 立绘背景) ============ */
+.hud{
+  position:relative; overflow:hidden;
+  margin-bottom:20px; padding:15px 20px 16px;
+  background:linear-gradient(115deg,var(--panel2) 0%,var(--panel) 55%,#14232b 100%);
+  border:1px solid var(--line); border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  animation:dropIn .55s .05s cubic-bezier(.2,.9,.3,1.2) backwards;
+}
+.hud-art{
+  position:absolute; left:0; top:-12px; bottom:-12px;
+  aspect-ratio:800/322;   /* 盒子与图片同比例,高度拉满标头、宽度等比展开 */
+  pointer-events:none;
+  background:none;
+  opacity:.55;
+  -webkit-mask-image:linear-gradient(90deg,#000 80%,transparent 100%);
+          mask-image:linear-gradient(90deg,#000 80%,transparent 100%);
+  filter:blur(1px) drop-shadow(0 0 26px rgba(82,205,182,.3));
+  transition:opacity .6s;
+}
+.hud:hover .hud-art{opacity:.75}
+.hud .brand{position:relative; text-shadow:0 1px 10px rgba(13,20,23,.95), 0 0 22px rgba(13,20,23,.7)}
+.hud .brand .sub{text-shadow:0 1px 6px rgba(13,20,23,.95)}
+.hud-top{position:relative; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.hud-top .spacer{flex:1; min-width:80px; display:flex; align-items:center; justify-content:center; position:relative}
+.hud-note{
+  display:none; max-width:min(420px,46vw); width:100%;
+  background:rgba(0,0,0,.28); border:1px dashed rgba(245,195,84,.4); border-radius:8px;
+  padding:6px 10px; text-align:left; cursor:text;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.hud-note.show{display:block}
+.hud-note .hud-note-view{
+  font-size:12.5px; line-height:1.55; color:var(--gold); white-space:pre-wrap; word-break:break-word;
+  min-height:1.2em;
+}
+.hud-note textarea{
+  display:none; width:100%; min-height:44px; resize:vertical;
+  background:transparent; border:none; outline:none; padding:0;
+  font:inherit; font-size:12.5px; line-height:1.55; color:var(--ink);
+}
+.hud-note.editing .hud-note-view{display:none}
+.hud-note.editing textarea{display:block}
+.hud-note-add{
+  display:none; border:1px dashed var(--line2); background:transparent; color:var(--dim);
+  font-size:11px; letter-spacing:.08em; padding:5px 12px; border-radius:7px; cursor:pointer;
+  transition:.18s;
+}
+.hud:hover .hud-note-add.show{display:inline-flex; align-items:center}
+.hud-note-add:hover{color:var(--gold); border-color:rgba(245,195,84,.45); background:rgba(245,195,84,.06)}
+.hud-xp{position:relative; display:flex; align-items:center; gap:14px; margin-top:13px}
+.hud-xp .xplabel{font-family:var(--mono); font-size:10px; letter-spacing:.26em; color:var(--dim); flex:none}
+.xpnum{font-family:var(--mono); font-size:12.5px; font-weight:800; color:var(--gold); flex:none; min-width:88px; text-align:right}
+@keyframes dropIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.brand{display:flex; align-items:center; gap:13px}
+.brand .sigil{
+  width:46px;height:46px; border-radius:10px; display:grid; place-items:center;
+  font-family:var(--disp); font-size:27px; color:var(--gold);
+  background:linear-gradient(145deg,#1d3038,#12201f);
+  border:1px solid var(--line2);
+  box-shadow:0 0 18px rgba(245,195,84,.22), inset 0 0 12px rgba(245,195,84,.08);
+}
+.brand h1{font-family:var(--disp); font-weight:400; font-size:27px; letter-spacing:3px; line-height:1}
+.brand .sub{font-family:var(--mono); font-size:10px; letter-spacing:.32em; color:var(--dim); margin-top:5px}
+.clock{font-family:var(--mono); text-align:center; padding:0 6px}
+.clock .hm{font-size:30px; font-weight:800; letter-spacing:1px; color:var(--ink)}
+.clock .hm b{color:var(--gold); font-weight:800}
+.clock .dt{font-size:11px; color:var(--mut); letter-spacing:.08em; margin-top:2px}
+.xpbar{flex:1; height:10px; border-radius:6px; background:#0b1316; border:1px solid var(--line); overflow:hidden; position:relative}
+.xpbar i{
+  display:block; height:100%; width:0%; border-radius:6px;
+  background:repeating-linear-gradient(-55deg,var(--gold) 0 7px,#d9a53c 7px 14px);
+  background-size:200% 100%; transition:width .7s cubic-bezier(.2,.8,.3,1);
+  animation:shimmer 2.6s linear infinite; box-shadow:0 0 12px rgba(245,195,84,.5);
+}
+@keyframes shimmer{to{background-position:-40px 0}}
+.hud-right{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.chip{
+  font-family:var(--mono); font-size:11px; color:var(--mut); letter-spacing:.05em;
+  padding:6px 10px; border:1px solid var(--line); border-radius:7px; background:rgba(0,0,0,.28); white-space:nowrap;
+}
+.chip b{color:var(--teal)}
+.chip.prio-legend{display:inline-flex; align-items:center; gap:6px; padding:6px 9px}
+.chip.prio-legend i{width:9px;height:9px; border-radius:3px; display:inline-block; box-shadow:0 0 8px currentColor}
+.hbtn{
+  font-size:12.5px; font-weight:700; letter-spacing:.05em; padding:9px 14px; border-radius:8px;
+  border:1px solid var(--line2); background:var(--panel2); color:var(--ink);
+  transition:.18s;
+}
+.hbtn:hover{transform:translateY(-2px); border-color:var(--gold); color:var(--gold); box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.hbtn.primary{background:linear-gradient(160deg,#f7cd6b,#dfa336); color:#221703; border-color:#f5c354;
+  box-shadow:0 4px 18px rgba(245,195,84,.28)}
+.hbtn.primary:hover{filter:brightness(1.08); color:#221703}
+
+/* ============ 双栏看板 ============ */
+.board{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px}
+.panel{
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  box-shadow:0 10px 28px rgba(0,0,0,.3);
+  animation:popIn .5s .15s cubic-bezier(.2,.9,.3,1.15) backwards;
+}
+.panel.side{animation-delay:.24s}
+@keyframes popIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+.panel-head{
+  display:flex; align-items:center; gap:10px; padding:13px 16px;
+  border-bottom:1px solid var(--line);
+}
+.panel.main .panel-head{background:linear-gradient(90deg,var(--gold-soft),transparent 65%)}
+.panel.side .panel-head{background:linear-gradient(90deg,var(--teal-soft),transparent 65%)}
+.panel-head .tag{
+  width:8px;height:22px;border-radius:3px; flex:none;
+}
+.panel.main .tag{background:var(--gold); box-shadow:0 0 10px rgba(245,195,84,.7)}
+.panel.side .tag{background:var(--teal); box-shadow:0 0 10px rgba(82,205,182,.7)}
+.panel-head h2{font-family:var(--disp); font-weight:400; font-size:19px; letter-spacing:2px}
+.panel.main h2 span{color:var(--gold)} .panel.side h2 span{color:var(--teal)}
+.panel-head .en{font-family:var(--mono); font-size:9.5px; letter-spacing:.28em; color:var(--dim); margin-left:2px; padding-top:4px}
+.panel-head .cnt{
+  margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--mut);
+  border:1px solid var(--line); border-radius:20px; padding:3px 10px; background:rgba(0,0,0,.25);
+}
+.panel-head .cnt b{color:var(--ink)}
+/* 分类筛选条 */
+.catfilter{display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:9px 14px; border-bottom:1px solid var(--line); background:rgba(0,0,0,.13)}
+.catfilter .fl{font-size:10px; letter-spacing:.2em; color:var(--dim); font-family:var(--mono)}
+.fbtn{
+  font-size:11px; padding:3px 9px; border-radius:20px; border:1px solid var(--line);
+  background:transparent; color:var(--dim); transition:.15s;
+}
+.fbtn:hover{color:var(--ink); border-color:var(--line2); transform:translateY(-1px)}
+.fbtn.on{border-color:var(--gold); color:var(--gold); background:var(--gold-soft)}
+.panel.side .fbtn.on{border-color:var(--teal); color:var(--teal); background:var(--teal-soft)}
+.qlist{list-style:none; padding:12px 14px; min-height:340px; max-height:470px; overflow-y:auto; transition:background .2s}
+.qlist.dragover{background:rgba(245,195,84,.05); box-shadow:inset 0 0 0 2px var(--gold); border-radius:0 0 12px 12px}
+.panel.side .qlist.dragover{box-shadow:inset 0 0 0 2px var(--teal); background:rgba(82,205,182,.05)}
+.drop-hint{
+  border:1.5px dashed var(--line2); border-radius:8px; color:var(--dim);
+  text-align:center; padding:14px; font-size:12.5px; margin:6px 0; letter-spacing:.1em;
+}
+.empty{
+  border:1.5px dashed var(--line2); border-radius:10px; margin:10px 4px; padding:34px 14px;
+  text-align:center; color:var(--dim); font-size:13px; letter-spacing:.12em;
+}
+.empty small{display:block; margin-top:8px; font-size:11px; letter-spacing:.05em; color:#46605a}
+
+/* 卡片(紧凑版:信息为主,按钮右置一排) */
+.qcard{
+  position:relative; display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-rows:auto auto auto;
+  grid-template-areas:
+    "check title rail"
+    "check body  rail"
+    "check meta  rail";
+  align-items:start; gap:1px 10px;
+  background:#17262d; border:1px solid var(--line); border-left-width:3px; border-radius:8px;
+  padding:7px 8px 7px 9px; margin:5px 0; cursor:grab; transition:transform .16s, box-shadow .16s, border-color .16s, opacity .3s;
+}
+.qcard:hover{transform:translateX(4px); border-color:var(--line2); box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.qcard:active{cursor:grabbing}
+.qcard.dragging{opacity:.35; transform:scale(.97)}
+.qcard.flash{animation:flashIn .45s}
+@keyframes flashIn{0%{background:rgba(245,195,84,.28)}100%{background:#17262d}}
+@media(prefers-reduced-motion:no-preference){
+ .qcard.justdone .qcheck.on{animation:checkSettle .28s cubic-bezier(.22,.75,.3,1)}
+ html[data-theme="dark"] .qcard.justdone .qcheck.on::after{
+  content:'';position:absolute;inset:-1px;border-radius:inherit;border:1px solid #8ce4ec;
+  pointer-events:none;animation:checkRipple .42s ease-out both;
+ }
+ .qcard.justdone .qcheck.on{position:relative}
+}
+@keyframes checkSettle{0%{transform:scale(.86)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes checkRipple{from{opacity:.65;transform:scale(1)}to{opacity:0;transform:scale(1.7)}}
+/* 卡片配色:由优先级决定(P0 紧急-红 / P1 重要-金 / P2 常规-青) */
+.q-P0{border-left-color:var(--rose)} .q-P0 .prio{color:var(--rose)}
+.q-P1{border-left-color:var(--gold)} .q-P1 .prio{color:var(--gold)}
+.q-P2{border-left-color:var(--teal)} .q-P2 .prio{color:var(--teal)}
+/* 限时任务:超时变红 */
+.qcard.late{border-color:rgba(245,127,108,.55); border-left-color:var(--rose); box-shadow:0 0 14px rgba(245,127,108,.16)}
+.qcard.late .qtitle{color:#ffb3a4}
+.qtime-wrap{display:inline-flex; align-items:center; gap:2px}
+.qtime{
+  position:relative; font-family:var(--mono); font-size:10px; color:var(--gold); cursor:pointer;
+  padding:1px 6px; border:1px dashed rgba(245,195,84,.55); border-radius:4px; background:transparent;
+  transition:.15s; display:inline-flex; align-items:center; gap:2px;
+}
+.qtime:hover{background:rgba(245,195,84,.1)}
+.qtime:disabled{opacity:.55; cursor:default}
+.qtime.over{color:#ff9384; border-color:var(--rose); animation:latePulse 1.8s infinite}
+@keyframes latePulse{0%,100%{box-shadow:0 0 3px rgba(245,127,108,.15)}50%{box-shadow:0 0 11px rgba(245,127,108,.55)}}
+.qtime.ok{color:var(--jade); border-color:rgba(87,207,143,.5); border-style:solid}
+.qtime-x{
+  width:16px; height:16px; padding:0; border:none; border-radius:4px; background:transparent;
+  color:var(--dim); font-size:12px; line-height:1; cursor:pointer; opacity:.55; transition:.15s;
+}
+.qtime-wrap:hover .qtime-x{opacity:1}
+.qtime-x:hover{color:var(--rose); background:rgba(245,127,108,.15)}
+/* 半小时时间选择弹层:双列 · 一列可见6项 · 深色主题 */
+.tpick-pop{
+  position:fixed; z-index:12000; min-width:168px;
+  background:#0e1a1f; color:var(--ink);
+  border:1px solid var(--line2); border-radius:9px;
+  box-shadow:0 14px 36px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+  padding:6px;
+  animation:tpickIn .14s ease-out;
+}
+@keyframes tpickIn{from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:none}}
+.tpick-hd{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:2px 4px 6px; border-bottom:1px solid var(--line); margin-bottom:5px;
+  font-family:var(--mono); font-size:10px; color:var(--dim); letter-spacing:.06em;
+}
+.tpick-hd button{
+  border:none; background:transparent; color:var(--mut); font-size:11px; padding:2px 6px;
+  border-radius:4px; cursor:pointer;
+}
+.tpick-hd button:hover{color:var(--rose); background:rgba(245,127,108,.12)}
+.tpick-grid{
+  --tpick-row:28px;
+  display:grid; grid-template-columns:1fr 1fr; gap:2px 4px;
+  max-height:calc(var(--tpick-row) * 6);
+  overflow-y:auto; overflow-x:hidden; padding-right:2px;
+}
+.tpick-grid::-webkit-scrollbar{width:6px}
+.tpick-grid::-webkit-scrollbar-thumb{background:#2c4048; border-radius:4px}
+.tpick-item{
+  height:var(--tpick-row); box-sizing:border-box;
+  display:grid; place-items:center;
+  font-family:var(--mono); font-size:12px; font-weight:600;
+  color:var(--ink); background:transparent; border:1px solid transparent;
+  border-radius:5px; cursor:pointer; padding:0 8px;
+}
+.tpick-item:hover{background:rgba(245,195,84,.12); color:var(--gold); border-color:rgba(245,195,84,.25)}
+.tpick-item.on{background:rgba(245,195,84,.2); color:var(--gold); border-color:rgba(245,195,84,.45)}
+.tpick-item.near{box-shadow:inset 0 0 0 1px rgba(82,205,182,.45); color:var(--teal)}
+.tpick-item.on.near{color:var(--gold)}
+.tpick-pop.date{min-width:220px}
+.tpick-pop.date .tpick-item{font-size:11.5px; padding:0 6px}
+.tpick-pop.date .tpick-item:hover{background:rgba(82,205,182,.12); color:var(--teal); border-color:rgba(82,205,182,.3)}
+.tpick-pop.date .tpick-item.on{background:rgba(82,205,182,.2); color:var(--teal); border-color:rgba(82,205,182,.5)}
+.tpick-pop.date .tpick-item.near{box-shadow:inset 0 0 0 1px rgba(245,195,84,.45); color:var(--gold)}
+.tpick-pop.date .tpick-item.on.near{color:var(--teal)}
+.tpick-pop.date .tpick-item.over{color:var(--rose); opacity:.85}
+.qdue{
+  font-family:var(--mono); font-size:10px; color:var(--teal); cursor:pointer;
+  padding:1px 6px; border:1px dashed rgba(82,205,182,.55); border-radius:4px; background:transparent;
+  transition:.15s; display:inline-flex; align-items:center; gap:2px;
+}
+.qdue:hover{background:rgba(82,205,182,.1)}
+.qdue:disabled{opacity:.55; cursor:default}
+.qdue.over{color:#ff9384; border-color:var(--rose)}
+.addtime.side .addtime-trig:hover,.addtime.side .addtime-trig.has{color:var(--teal)}
+.addtime.side .addtime-trig:hover{background:rgba(82,205,182,.08)}
+.addtime{
+  display:inline-flex; align-items:center; gap:4px;
+  background:#0e1a1f; border:1px solid var(--line); border-radius:7px; padding:2px 4px 2px 8px;
+  font-family:var(--mono); font-size:11.5px; color:var(--mut);
+}
+.addtime .addtime-trig{
+  border:none; background:transparent; color:var(--ink); font:inherit; font-family:var(--mono);
+  padding:4px 6px; cursor:pointer; border-radius:5px;
+}
+.addtime .addtime-trig:hover{color:var(--gold); background:rgba(245,195,84,.08)}
+.addtime .addtime-trig.has{color:var(--gold)}
+.addtime .addtime-x{
+  width:18px; height:18px; border:none; border-radius:4px; background:transparent;
+  color:var(--dim); cursor:pointer; line-height:1; display:none;
+}
+.addtime .addtime-x.show{display:inline-grid; place-items:center}
+.addtime .addtime-x:hover{color:var(--rose); background:rgba(245,127,108,.12)}
+.qcheck{
+  grid-area:check; align-self:center; width:19px;height:19px; border-radius:6px; border:2px solid var(--line2);
+  background:transparent; display:grid; place-items:center; transition:.18s; color:transparent; font-size:12px; font-weight:900;
+}
+.qcard:hover .qcheck{border-color:var(--teal)}
+.qcheck.on{background:var(--jade); border-color:var(--jade); color:#08140c; box-shadow:0 0 10px rgba(87,207,143,.5)}
+.qtitle{grid-area:title; align-self:end; font-size:13.5px; font-weight:700; line-height:1.3; word-break:break-all; cursor:pointer; transition:color .15s}
+.qtitle:hover{color:var(--gold)}
+.qcard.late .qtitle:hover{color:#ffcdc2}
+.qcard.done .qtitle{color:var(--dim); text-decoration:line-through; text-decoration-color:rgba(87,207,143,.6); font-weight:500}
+.qbodywrap{grid-area:body; min-width:0}
+.qbody{font-size:11.5px; color:var(--mut); line-height:1.5; margin-top:2px; word-break:break-all;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.qcard.done .qbody{color:#4c655d}
+.qmeta{grid-area:meta; align-self:start; display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin-top:3px}
+.cat{font-size:9.5px; padding:1px 6px; border-radius:4px; letter-spacing:.08em; background:rgba(255,255,255,.055); color:var(--mut); border:1px solid var(--line)}
+.prio{font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.1em}
+.due{font-family:var(--mono); font-size:9.5px; color:var(--dim); padding:1px 6px; border:1px dashed var(--line2); border-radius:4px}
+.due.over{color:var(--rose); border-color:var(--rose)}
+.delay{
+  font-family:var(--mono); font-size:9.5px; color:var(--rose);
+  padding:1px 6px; border:1px solid rgba(245,127,108,.45); border-radius:4px;
+  background:rgba(245,127,108,.1);
+}
+/* 卡片操作区:备注 / 编辑 / 删除 —— 整列钉在最右,纵向居中 */
+.qrail{grid-area:rail; align-self:center; display:flex; flex-direction:row; gap:4px; align-items:center; padding-left:2px}
+.qrail button{width:27px;height:27px; border:none; border-radius:6px; background:transparent; color:var(--mut); font-size:14px; opacity:.55; transition:.15s; line-height:1}
+.qcard:hover .qrail button{opacity:1}
+.qrail button:hover{background:rgba(255,255,255,.08); transform:translateY(-1px)}
+.qrail .qnote-btn{position:relative}
+.qrail .qnote-btn.hasnote{opacity:1; color:var(--gold); text-shadow:0 0 10px rgba(245,195,84,.85)}
+.qrail .qnote-btn.hasnote::after{content:''; position:absolute; top:2px; right:2px; width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 7px rgba(245,195,84,.95)}
+.qrail .qnote-btn:hover{color:var(--gold)}
+.qrail .qedit:hover{color:var(--blue)}
+.qrail .qx:hover{background:rgba(245,127,108,.15); color:var(--rose)}
+/* 编辑态 */
+.qcard.editing{cursor:default; border-color:var(--gold); box-shadow:0 0 0 1px rgba(245,195,84,.3), 0 10px 24px rgba(0,0,0,.4)}
+.qcard.editing:hover{transform:none}
+.qcard.editing .qrail{visibility:hidden}
+.qedit-form{margin-top:9px; background:rgba(0,0,0,.22); border:1px solid var(--line2); border-radius:8px; padding:9px 10px; animation:formIn .22s ease}
+@keyframes formIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.qedit-form .ed-title,.qedit-form .ed-body{width:100%; background:#0d181d; border:1px solid var(--line); border-radius:6px; padding:7px 10px; font-size:13px; outline:none; color:var(--ink); transition:border-color .15s}
+.qedit-form .ed-body{resize:vertical; min-height:46px; line-height:1.65; font-size:12.5px; margin-top:6px; color:var(--mut)}
+.qedit-form .ed-title:focus,.qedit-form .ed-body:focus{border-color:var(--gold)}
+.qedit-form .ed-row{display:flex; gap:7px; align-items:center; margin-top:7px}
+.qedit-form select{background:#0d181d; border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-size:12px; outline:none; color:var(--ink)}
+.ed-save{font-size:11.5px; font-weight:700; padding:5px 14px; border-radius:6px; border:none; background:var(--gold); color:#221703; transition:.15s}
+.ed-save:hover{filter:brightness(1.12)}
+.ed-cancel{font-size:11.5px; padding:5px 12px; border-radius:6px; border:1px solid var(--line2); background:transparent; color:var(--mut); transition:.15s}
+.ed-cancel:hover{color:var(--ink); border-color:var(--dim)}
+.qedit-form .ed-row .ed-save{margin-left:auto}
+/* 备注面板 */
+.qnote-panel{margin-top:9px; background:rgba(245,195,84,.05); border:1px solid rgba(245,195,84,.32); border-radius:8px; padding:9px 10px; animation:formIn .22s ease}
+.qnote-panel textarea{width:100%; min-height:58px; resize:vertical; background:#0d181d; border:1px solid var(--line); border-radius:6px; padding:7px 10px; font-size:12.5px; line-height:1.7; outline:none; color:var(--ink)}
+.qnote-panel textarea:focus{border-color:var(--gold)}
+.qnote-ops{display:flex; align-items:center; gap:7px; margin-top:6px}
+.qnote-hint{font-size:10.5px; color:var(--dim)}
+
+/* 添加条目 */
+.addrow{padding:12px 14px 14px; border-top:1px solid var(--line); background:rgba(0,0,0,.14)}
+.addrow .row1{display:flex; gap:8px}
+.addrow input[type=text]{
+  flex:1; background:#0e1a1f; border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+  font-size:13.5px; outline:none; transition:.18s;
+}
+.addrow input[type=text]:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(245,195,84,.12)}
+.panel.side .addrow input[type=text]:focus{border-color:var(--teal); box-shadow:0 0 0 3px rgba(82,205,182,.12)}
+.addrow .row2{display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap}
+.addrow textarea{
+  width:100%; margin-top:8px; background:#0e1a1f; border:1px solid var(--line); border-radius:8px;
+  padding:7px 12px; font-size:12.5px; line-height:1.6; resize:vertical; min-height:34px; outline:none; transition:.18s;
+}
+.panel.main .addrow textarea:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(245,195,84,.12)}
+.panel.side .addrow textarea:focus{border-color:var(--teal); box-shadow:0 0 0 3px rgba(82,205,182,.12)}
+.addrow select{
+  background:#0e1a1f; border:1px solid var(--line); border-radius:7px; padding:6px 9px; font-size:12px; outline:none;
+}
+.addrow input[type=date]{
+  background:#0e1a1f; border:1px solid var(--line); border-radius:7px; padding:5px 8px; font-size:11.5px;
+  outline:none; color-scheme:dark; font-family:var(--mono);
+}
+.addbtn{
+  margin-left:auto; font-size:12.5px; font-weight:700; padding:7px 16px; border-radius:7px; border:1px solid var(--line2);
+  background:var(--panel2); color:var(--ink); transition:.18s;
+}
+.panel.main .addbtn:hover{background:var(--gold); color:#221703; border-color:var(--gold)}
+.panel.side .addbtn:hover{background:var(--teal); color:#04231d; border-color:var(--teal)}
+
+/* ============ 今日总结 ============ */
+.summary{
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  box-shadow:0 10px 28px rgba(0,0,0,.3);
+  animation:popIn .5s .34s cubic-bezier(.2,.9,.3,1.15) backwards;
+}
+.summary-head{
+  display:flex; align-items:center; gap:10px; padding:13px 16px; border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(245,195,84,.07),transparent 55%);
+}
+.summary-head .tag{width:8px;height:22px;border-radius:3px;background:var(--gold);box-shadow:0 0 10px rgba(245,195,84,.6)}
+.summary-head h2{font-family:var(--disp); font-weight:400; font-size:19px; letter-spacing:2px}
+.summary-head h2 span{color:var(--gold)}
+.summary-head .en{font-family:var(--mono); font-size:9.5px; letter-spacing:.28em; color:var(--dim); padding-top:4px}
+.buffbar{margin-left:auto; display:flex; gap:7px; flex-wrap:wrap; align-items:center}
+.buffbar .lbl{font-size:11px; color:var(--dim); letter-spacing:.1em; margin-right:2px}
+.buff{
+  font-size:11.5px; padding:4px 11px; border-radius:20px; border:1px solid var(--line2);
+  background:transparent; color:var(--mut); transition:.16s;
+}
+.buff:hover{transform:translateY(-1px); color:var(--ink); border-color:var(--dim)}
+.buff.on{border-color:var(--gold); color:var(--gold); background:var(--gold-soft); box-shadow:0 0 8px rgba(245,195,84,.18)}
+.summary-body{padding:0}
+.sumleft{padding:15px 16px 16px}
+.sumleft textarea{
+  width:100%; min-height:150px; resize:vertical; background:#0e1a1f; border:1px solid var(--line);
+  border-radius:9px; padding:12px 14px; font-size:13.5px; line-height:1.75; outline:none; transition:.18s;
+}
+.sumleft textarea:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(245,195,84,.1)}
+.sumleft .foot{display:flex; align-items:center; margin-top:9px; gap:10px}
+.wcnt{font-family:var(--mono); font-size:11px; color:var(--dim)}
+.saved{font-size:11px; color:var(--jade); opacity:0; transition:opacity .3s}
+.saved.show{opacity:1}
+.actions{display:flex; gap:8px; flex-wrap:wrap}
+.foot .actions{margin-top:0}
+.ghost{
+  font-size:12px; padding:8px 13px; border-radius:7px; border:1px solid var(--line2);
+  background:transparent; color:var(--mut); transition:.18s;
+}
+.ghost:hover{color:var(--ink); border-color:var(--gold); transform:translateY(-1px)}
+
+/* ============ 归档抽屉 ============ */
+.drawer{
+  position:fixed; top:0; right:0; bottom:0; width:min(620px,94vw); z-index:60;
+  background:var(--bg1); border-left:1px solid var(--line2);
+  box-shadow:-24px 0 60px rgba(0,0,0,.55);
+  transform:translateX(105%); transition:transform .38s cubic-bezier(.25,.9,.3,1);
+  display:flex; flex-direction:column;
+}
+.drawer.open{transform:none}
+.drawer-head{display:flex; align-items:center; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line)}
+.drawer-head h3{font-family:var(--disp); font-weight:400; font-size:20px; letter-spacing:2px}
+.drawer-head h3 span{color:var(--teal)}
+.drawer-head .en{font-family:var(--mono); font-size:9px; letter-spacing:.3em; color:var(--dim)}
+.drawer-head .x{margin-left:auto; width:30px;height:30px; border-radius:7px; border:1px solid var(--line2); background:transparent; color:var(--mut); font-size:14px; transition:.18s}
+.drawer-head .x:hover{color:var(--rose); border-color:var(--rose)}
+.drawer-body{flex:1; overflow-y:auto; padding:16px 18px}
+.arc{
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:16px; overflow:hidden;
+  animation:popIn .35s backwards;
+}
+.arc-head{display:flex; align-items:center; gap:9px; padding:11px 14px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.025); flex-wrap:wrap}
+.arc-head .d{font-family:var(--mono); font-weight:800; font-size:13px; color:var(--gold)}
+.arc-head .w{font-size:11px; color:var(--mut)}
+.arc-head .pct{font-family:var(--mono); font-size:11px; color:var(--jade); border:1px solid var(--line); border-radius:20px; padding:2px 9px}
+.arc-head .ops{margin-left:auto; display:flex; gap:6px}
+.mini{font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--line2); background:transparent; color:var(--mut); transition:.15s}
+.mini:hover{color:var(--gold); border-color:var(--gold)}
+.mini.danger:hover{color:var(--rose); border-color:var(--rose)}
+.arc table{width:100%; border-collapse:collapse; font-size:12px}
+.arc th{text-align:left; font-size:10.5px; letter-spacing:.15em; color:var(--dim); font-weight:500; padding:7px 10px; border-bottom:1px solid var(--line); background:rgba(0,0,0,.18)}
+.arc td{padding:7px 10px; border-bottom:1px solid rgba(39,57,63,.5); color:var(--mut); vertical-align:top}
+.arc td.t{color:var(--ink)}
+.arc .ok{color:var(--jade); font-family:var(--mono); font-weight:800}
+.arc .no{color:var(--rose); font-family:var(--mono); font-weight:800}
+.arc .rec{color:var(--dim); font-size:10px; border:1px solid var(--line2); border-radius:4px; padding:1px 6px; white-space:nowrap}
+.arc .grp{font-size:10.5px; letter-spacing:.12em; color:var(--teal); background:rgba(82,205,182,.06)!important; border-bottom:1px solid var(--line)!important; padding:5px 10px!important}
+.arc .carry{font-size:9.5px; color:var(--blue); border:1px solid rgba(111,178,242,.4); border-radius:4px; padding:1px 5px; margin-left:5px; white-space:nowrap}
+.arc-sum{padding:11px 14px; font-size:12.5px; line-height:1.8; color:var(--mut); white-space:pre-wrap; border-top:1px solid var(--line)}
+.arc-sum::before{content:'冒险手记 ▸ '; color:var(--gold); font-weight:700}
+.arc-empty{text-align:center; color:var(--dim); padding:60px 0; font-size:13px; letter-spacing:.15em}
+.mdview{display:none; padding:12px 14px}
+.arc.mdmode .mdview{display:block} .arc.mdmode .arc-sum{display:none} .arc.mdmode table{display:none}
+.mdview pre{font-family:var(--mono); font-size:11.5px; line-height:1.7; color:var(--teal); white-space:pre-wrap; word-break:break-all}
+.veil{position:fixed; inset:0; background:rgba(5,10,12,.6); z-index:55; opacity:0; pointer-events:none; transition:opacity .3s; backdrop-filter:blur(2px)}
+.veil.show{opacity:1; pointer-events:auto}
+
+/* ============ 归档仪式弹窗 ============ */
+.modal{position:fixed; inset:0; z-index:80; display:none; place-items:center; background:rgba(5,10,12,.72); backdrop-filter:blur(3px)}
+.modal.show{display:grid}
+.mcard{
+  width:min(660px,92vw); max-height:86vh; overflow-y:auto; background:var(--panel);
+  border:1px solid var(--gold); border-radius:14px; padding:26px 28px;
+  box-shadow:0 0 60px rgba(245,195,84,.18), 0 30px 70px rgba(0,0,0,.6);
+  animation:popIn .4s cubic-bezier(.2,.9,.3,1.2) backwards;
+}
+.mcard .mtag{font-family:var(--mono); font-size:10px; letter-spacing:.3em; color:var(--gold)}
+.mcard h3{font-family:var(--disp); font-weight:400; font-size:26px; letter-spacing:3px; margin:8px 0 4px}
+.mcard h3 span{color:var(--gold)}
+.mcard .msub{font-size:12.5px; color:var(--mut); margin-bottom:16px}
+.mstats{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap}
+.mstat{flex:1; min-width:110px; background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:9px; padding:10px 12px; text-align:center}
+.mstat b{display:block; font-family:var(--mono); font-size:22px; font-weight:800; color:var(--gold)}
+.mstat span{font-size:10.5px; color:var(--dim); letter-spacing:.12em}
+.mpre{
+  background:#0b1417; border:1px solid var(--line); border-radius:9px; padding:13px 15px;
+  font-family:var(--mono); font-size:11.5px; line-height:1.75; color:var(--teal);
+  max-height:230px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; margin-bottom:16px;
+}
+.mbtns{display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap}
+
+/* ============ Toast / XP浮字 / 底部 ============ */
+#toastbox{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:99; display:flex; flex-direction:column; gap:8px; align-items:center}
+.toast{
+  background:var(--panel2); border:1px solid var(--gold); color:var(--ink); font-size:13px;
+  padding:10px 20px; border-radius:9px; box-shadow:0 8px 26px rgba(0,0,0,.5);
+  animation:toastIn .3s cubic-bezier(.2,.9,.3,1.3), toastOut .3s 2.1s forwards;
+}
+@keyframes toastIn{from{opacity:0; transform:translateY(14px)}to{opacity:1; transform:none}}
+@keyframes toastOut{to{opacity:0; transform:translateY(10px)}}
+.xpfloat{
+  position:fixed; z-index:99; font-family:var(--mono); font-weight:800; font-size:15px;
+  color:var(--gold); text-shadow:0 0 12px rgba(245,195,84,.8); pointer-events:none;
+  animation:xpup .9s forwards;
+}
+@keyframes xpup{0%{opacity:0;transform:translateY(0)}18%{opacity:1}60%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
+footer{margin-top:26px; text-align:center; font-family:var(--mono); font-size:10px; letter-spacing:.2em; color:#3d554e}
+footer b{color:var(--dim)}
+
+@media (max-width:900px){
+  .board{grid-template-columns:1fr}
+  .hud-top{gap:10px}
+  .hud-right{width:100%; justify-content:flex-start}
+  .hud-art{opacity:.35}
+  .hud-note{max-width:100%}
+  .hud-top .spacer{order:3; width:100%; flex:1 1 100%; min-width:0}
+}
+</style>
+<link rel="stylesheet" href="assets/dashboard.css">
+<link rel="stylesheet" href="assets/theme-light.css">
+<link rel="stylesheet" href="assets/workspace.css">
+<link rel="stylesheet" href="assets/header-artwork.css">
+<link rel="stylesheet" href="assets/theme-cyber.css">
+<link rel="stylesheet" href="assets/focus.css">
+<link rel="stylesheet" href="assets/focus-ambience.css">
+<link rel="stylesheet" href="assets/library.css">
+<link rel="stylesheet" href="assets/notes.css">
+<link rel="stylesheet" href="assets/creative-space.css">
+<link rel="stylesheet" href="assets/task-directories.css">
+<link rel="stylesheet" href="assets/theme-warm.css">
+<link rel="stylesheet" href="assets/banner-library.css">
+</head>
+<body>
+<div id="emberLayer"></div>
+<aside class="workspace-rail">      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" focusable="false"><path d="M9.5 12.5h8a5 5 0 0 1 5 5v10a6 6 0 0 1 6-6h2.5M9.5 19.5h5a3.5 3.5 0 0 1 3.5 3.5v5" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="13" r="1.8" fill="currentColor"/></svg></span>
+        <h1>行间</h1>
+      </div>
+<div class="rail-section-label">工作空间</div><nav class="workspace-nav" aria-label="工作空间"><button type="button" class="rail-current view-link" id="viewDashboard" aria-current="page" aria-controls="dashboardView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> 今日工作台 <i></i></button><button type="button" class="view-link" id="viewLibrary" aria-controls="libraryView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="15" height="16" rx="2"/><path d="M7 2h12a2 2 0 0 1 2 2v12M6 16l4-4 3 3 2-2 3 3"/><circle cx="8" cy="9" r="1"/></svg> 灵感馆 <i></i></button><button type="button" class="view-link focus-nav" id="viewFocus" aria-controls="focusView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> 专注舱 <small id="focusNavStatus"></small><i></i></button><button type="button" class="view-link" id="viewGarden" aria-controls="gardenView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12c4-7 10-7 15 0-5 7-11 7-15 0Z M19 12l3-4v8l-3-4M1 19c3-2 5 2 8 0s5 2 8 0"/><circle cx="8" cy="11" r=".8"/></svg> 锦鲤庭 <i></i></button><button type="button" class="view-link" id="viewNotes" aria-controls="notesView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9l-7 7Z M14 21v-5a2 2 0 0 1 2-2h5M7 8h10M7 12h5"/></svg> 便签 <i></i></button></nav><div class="rail-actions"><button class="hbtn" id="btnDrawer">📜 归档</button><button class="hbtn" id="btnBindDir" title="选择 任务记录，并选择归档文件夹。每月 1 日把上月记录归入 归档\对应年\对应月\01_工作日志">📁 绑定目录</button></div><div class="rail-bottom">      <div class="clock">
+        <div class="hm" id="clock">--<b>:</b>--</div>
+        <div class="dt" id="dateline">——</div>
+      </div>
+</div></aside>
+<main>
+  <!-- 顶部 HUD -->
+  <div class="workspace-topline"><span>行间 <i>/</i> <span id="workspaceLocation">今日工作台</span></span><div class="workspace-actions"><button type="button" class="hbtn theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="亮色主题"><span id="themeIcon" aria-hidden="true">☾</span><span id="themeLabel" aria-hidden="true">暗色</span></button><button class="hbtn primary" id="btnSettle">⚔ 结算今日 → 新的一天</button></div></div>
+  <div id="dashboardView">
+  <header class="hud">
+    <div class="hero-copy"><div class="eyebrow"><span></span> THE DAILY PRACTICE</div><div class="headline-area">
+      <h2 class="hero-title" id="heroTitle">来都来了，<br><em>先做一件。</em></h2>
+      <button type="button" class="headline-edit" id="headlineEdit" aria-controls="headlineForm" aria-expanded="false">自定义标题 ↗</button>
+      <form class="headline-form" id="headlineForm" hidden>
+        <label for="headlineFirst">第一行 <span>每行最多 16 字</span></label>
+        <input id="headlineFirst" type="text" maxlength="16" autocomplete="off" placeholder="写下你的开场白" aria-describedby="headlineHint">
+        <label for="headlineSecond">第二行 <span>可留空</span></label>
+        <input id="headlineSecond" type="text" maxlength="16" autocomplete="off" placeholder="再添一句，也可以留白">
+        <p id="headlineHint">保存在本浏览器；清空两行或恢复随机后，每次打开换一句。</p>
+        <div class="headline-actions"><button type="submit" class="ed-save">保存</button><button type="button" class="ed-cancel" id="headlineCancel">取消</button><button type="button" class="headline-reset" id="headlineReset">恢复随机</button></div>
+      </form>
+      <span class="headline-status" id="headlineStatus" role="status" aria-live="polite"></span>
+    </div>      <div class="spacer">
+        <div class="hud-note" id="hudNote" title="点击编辑 · 心情 / 提醒">
+          <div class="hud-note-view" id="hudNoteView"></div>
+          <textarea id="hudNoteEdit" rows="2" maxlength="200" placeholder="写下当前心情或给自己的提醒…"></textarea>
+        </div>
+        <button type="button" class="hud-note-add show" id="hudNoteAdd" title="添加心情或提醒">＋ 心情 / 提醒</button>
+      </div>
+</div>
+<div class="hero-visual"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="banner-day-depth" aria-hidden="true"><div class="banner-day-halo"></div></div><div class="hud-art" id="headerArtwork" aria-hidden="true"></div><div class="banner-atmosphere" aria-hidden="true"><i style="--x:9%;--y:68%;--s:2px;--duration:18s;--delay:-4s"></i><i style="--x:18%;--y:28%;--s:1px;--duration:22s;--delay:-11s"></i><i style="--x:27%;--y:81%;--s:2px;--duration:19s;--delay:-8s"></i><i style="--x:38%;--y:14%;--s:1px;--duration:24s;--delay:-18s"></i><i style="--x:48%;--y:72%;--s:1px;--duration:17s;--delay:-5s"></i><i style="--x:57%;--y:24%;--s:1px;--duration:21s;--delay:-15s"></i><i style="--x:68%;--y:86%;--s:2px;--duration:23s;--delay:-10s"></i><i style="--x:77%;--y:43%;--s:1px;--duration:18s;--delay:-13s"></i><i style="--x:86%;--y:19%;--s:2px;--duration:20s;--delay:-6s"></i><i style="--x:93%;--y:75%;--s:1px;--duration:25s;--delay:-21s"></i></div><div class="banner-day-motes" aria-hidden="true"><i style="--x:12%;--y:62%;--size:3px;--delay:-2.4s"></i><i style="--x:21%;--y:34%;--size:3px;--delay:-6.6s"></i><i style="--x:27%;--y:73%;--size:4px;--delay:-4.1s"></i><i style="--x:35%;--y:44%;--size:3px;--delay:-8.5s"></i><i style="--x:47%;--y:79%;--size:5px;--delay:-1.2s"></i><i style="--x:76%;--y:17%;--size:3px;--delay:-4.7s"></i><i style="--x:87%;--y:57%;--size:4px;--delay:-7.3s"></i><i style="--x:93%;--y:76%;--size:3px;--delay:-3.3s"></i></div><div class="artwork-controls"><button type="button" id="artworkChoose" aria-label="更换标题图片" title="更换标题图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg></button><button type="button" id="artworkReset" aria-label="恢复默认标题图片" title="恢复默认标题图片" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg></button><input type="file" id="artworkFile" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden></div><span class="artwork-status" id="artworkStatus" role="status" aria-live="polite"></span></div>
+        <div class="hud-xp">
+      <span class="xplabel">今日任务进度</span>
+      <div class="xpbar"><i id="xpfill"></i></div>
+      <b class="xpnum" id="xpnum">0/0 · 0%</b>
+    </div>
+
+  </header>
+  <div class="board-topline"><span class="section-kicker">01 <b>任务空间</b></span><div class="priority-key"><span class="chip prio-legend" title="条目颜色由优先级决定"><i style="background:var(--rose)"></i>P0 紧急</span>
+<span class="chip prio-legend" title="条目颜色由优先级决定"><i style="background:var(--gold)"></i>P1 重要</span>
+<span class="chip prio-legend" title="条目颜色由优先级决定"><i style="background:var(--teal)"></i>P2 常规</span>
+<span class="chip" title="每日 MD 写入 任务记录。换过文件夹后请点一次「绑定目录」">⬇ <b>任务记录/</b></span></div></div>
+  <!-- 双栏:今日计划 ⇄ 待办列表 -->
+  <section class="board">
+    <div class="panel main" data-p="main">
+      <div class="panel-head">
+        <span class="tag"></span>
+        <h2><span>今日计划</span></h2>
+        <span class="cnt">已接 <b id="cntMain">0</b></span>
+      </div>
+      <div class="catfilter">
+        <span class="fl">筛选</span>
+        <button class="fbtn on" data-f="">全部</button>
+        <button class="fbtn" data-f="plan">规划</button>
+        <button class="fbtn" data-f="doc">文档</button>
+        <button class="fbtn" data-f="req">需求</button>
+        <button class="fbtn" data-f="cfg">配置</button>
+        <button class="fbtn" data-f="mgmt">管理</button>
+        <button class="fbtn" data-f="misc">其他</button>
+      </div>
+      <ul class="qlist" id="listMain" data-list="main"></ul>
+      <div class="addrow">
+        <div class="row1"><input type="text" id="addMainText" placeholder="写下一条今日主线,回车快速添加…" maxlength="120"></div>
+        <div class="row1"><textarea id="addMainBody" rows="1" placeholder="正文(可选):细节、验收标准…"></textarea></div>
+        <div class="row2">
+          <select id="addMainCat">
+            <option value="plan">规划</option><option value="doc">文档</option><option value="req">需求</option>
+            <option value="cfg">配置</option><option value="mgmt">管理</option><option value="misc">其他</option>
+          </select>
+          <select id="addMainPrio"><option value="P0">P0 紧急</option><option value="P1" selected>P1 重要</option><option value="P2">P2 常规</option></select>
+          <span class="addtime" title="当日预计完成时间(可不设)：10:00–22:00 · 半小时">
+            <button type="button" class="addtime-trig" id="addMainTimeBtn">⏱ <span id="addMainTimeLab">设定时间</span></button>
+            <button type="button" class="addtime-x" id="addMainTimeClear" title="清除">×</button>
+          </span>
+          <button class="addbtn" id="addMainBtn">+ 接取任务</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel side" data-p="side">
+      <div class="panel-head">
+        <span class="tag"></span>
+        <h2><span>待办列表</span></h2>
+        <span class="cnt">囤积 <b id="cntSide">0</b></span>
+      </div>
+      <div class="catfilter">
+        <span class="fl">筛选</span>
+        <button class="fbtn on" data-f="">全部</button>
+        <button class="fbtn" data-f="plan">规划</button>
+        <button class="fbtn" data-f="doc">文档</button>
+        <button class="fbtn" data-f="req">需求</button>
+        <button class="fbtn" data-f="cfg">配置</button>
+        <button class="fbtn" data-f="mgmt">管理</button>
+        <button class="fbtn" data-f="misc">其他</button>
+      </div>
+      <ul class="qlist" id="listSide" data-list="side"></ul>
+      <div class="addrow">
+        <div class="row1"><input type="text" id="addSideText" placeholder="先记进待办池,之后拖入今日计划…" maxlength="120"></div>
+        <div class="row1"><textarea id="addSideBody" rows="1" placeholder="正文(可选):细节、验收标准…"></textarea></div>
+        <div class="row2">
+          <select id="addSideCat">
+            <option value="plan">规划</option><option value="doc">文档</option><option value="req">需求</option>
+            <option value="cfg">配置</option><option value="mgmt">管理</option><option value="misc">其他</option>
+          </select>
+          <select id="addSidePrio"><option value="P0">P0 紧急</option><option value="P1">P1 重要</option><option value="P2" selected>P2 常规</option></select>
+          <span class="addtime side" title="预期完成日期(可不设)">
+            <button type="button" class="addtime-trig" id="addSideDueBtn">📅 <span id="addSideDueLab">设定日期</span></button>
+            <button type="button" class="addtime-x" id="addSideDueClear" title="清除">×</button>
+          </span>
+          <button class="addbtn" id="addSideBtn">+ 放入待办</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="journal-divider"><span class="section-kicker">02 <b>每日复盘</b></span><span>留一点时间，给今天的自己。</span></div>
+  <!-- 今日总结 -->
+  <section class="summary">
+    <div class="summary-head">
+      <span class="tag"></span>
+      <h2><span>今日总结</span></h2>
+      <div class="buffbar">
+        <span class="lbl">今日状态 BUFF:</span>
+        <button class="buff" data-b="🔥 状态爆棚">🔥 状态爆棚</button>
+        <button class="buff" data-b="⚡ 节奏在线">⚡ 节奏在线</button>
+        <button class="buff" data-b="😮‍💨 略有疲惫">😮‍💨 略有疲惫</button>
+        <button class="buff" data-b="💀 血条告急">💀 血条告急</button>
+      </div>
+    </div>
+    <div class="summary-body">
+      <div class="sumleft">
+        <textarea id="summaryText" placeholder="记录今日心得:版本推进卡在哪?哪场评审最有收获?明天的第一优先级是什么?&#10;——内容会自动保存,结算时随当日一起归档。"></textarea>
+        <div class="foot">
+          <span class="wcnt" id="wcnt">0 字</span>
+          <span class="saved" id="saved">✓ 已自动保存</span>
+          <div class="actions" style="margin-left:auto">
+            <button class="ghost" id="btnCopyToday">⧉ 复制今日 MD</button>
+            <button class="ghost" id="btnDlToday">⬇ 下载今日 MD</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer><b>数据保存在当前浏览器 · 可选绑定「任务记录」和「归档」目录，保存每日 Markdown 并按月归档</b></footer>
+  </div>
+
+
+<section id="libraryView" class="library-view" aria-labelledby="libraryHeading" hidden>
+ <header class="module-heading"><div><h1 id="libraryHeading">灵感馆</h1><p>收集图片、链接和想法。</p></div><div class="module-actions"><button type="button" class="ghost" id="libResume" hidden>继续草稿</button><button type="button" class="hbtn primary" id="libNew">＋ 收集灵感</button></div></header>
+ <details class="creative-storage"><summary>保存与备份 <span>本地素材库</span></summary><div class="library-storage"><div><strong id="libStorageState">正在读取素材库…</strong><p id="libStorageDetail">素材保存在本浏览器；绑定目录后可同步至本地文件夹。</p></div><div class="module-actions"><button type="button" class="ghost" id="libBind">绑定素材目录</button><button type="button" class="ghost" id="libSync">同步目录</button><button type="button" class="ghost" id="libExport">导出完整备份</button><button type="button" class="ghost" id="libImport">恢复备份</button><input type="file" id="libImportFile" accept=".zip,application/zip" hidden></div></div>
+ <div class="library-obsidian-target"><span id="libObsidianTarget">Obsidian · 尚未选择收件箱</span><button type="button" class="ghost" id="libObsidianBind">选择收件箱</button></div>
+</details>
+ <div class="library-toolbar"><div class="library-tabs" aria-label="整理状态"><button type="button" data-lib-state="all" aria-pressed="true">全部</button><button type="button" data-lib-state="inbox" aria-pressed="false">待整理</button><button type="button" data-lib-state="featured" aria-pressed="false">精选</button><button type="button" data-lib-state="archived" aria-pressed="false">归档</button></div><input type="search" id="libSearch" aria-label="搜索素材" placeholder="搜索标题、想法、标签或文件名…"><select id="libCategory" aria-label="素材类型"><option value="">所有类型</option><option>玩法想法</option><option>竞品参考</option><option>表现参考</option><option>问题与观察</option><option>随手记</option></select></div>
+ <div id="libTags" class="library-tags" aria-label="标签筛选"></div><div class="library-maintenance"><span id="libCount">0 条灵感</span><button type="button" id="libTidy">整理待收录素材 ↗</button><span id="libBackupDate">尚未导出完整备份</span></div>
+ <p id="libMessage" class="module-message" role="status" aria-live="polite"></p><div id="libDropZone" class="library-dropzone"><div id="libGrid" class="library-grid"></div><div class="library-drop-hint">拖入图片或文件 · 粘贴截图 · 随手记一句</div></div>
+</section>
+<dialog id="libReader" class="library-dialog library-reader" aria-labelledby="libReaderTitle"><div class="library-reader-chrome"><div class="library-dialog-head"><button type="button" id="libReaderObsidian" class="ghost">发送到 Obsidian ↗</button><button type="button" id="libReaderEdit" class="ghost">编辑内容</button><button type="button" class="ghost" id="libReaderClose" aria-label="关闭预览">✕</button></div><p id="libReaderObsidianStatus" class="library-reader-status" role="status"></p></div><div id="libReaderBody" class="library-reader-body"><div id="libReaderAssets" class="library-reader-assets"></div><div class="library-reader-copy"><p id="libReaderMeta"></p><h2 id="libReaderTitle"></h2><p id="libReaderNote"></p><a id="libReaderSource" target="_blank" rel="noopener noreferrer">打开原始来源 ↗</a><button type="button" id="libReaderOrigin" class="ghost" hidden>回到原便签 ↗</button></div><p id="libReaderMessage" class="module-message" role="status"></p><div class="library-dialog-actions"><button type="button" id="libReaderToNotes" class="hbtn primary">拿到便签板展开 ↗</button></div></div></dialog>
+<dialog id="libDraftsDialog" class="library-dialog" aria-labelledby="libDraftsTitle"><div class="library-dialog-head"><h2 id="libDraftsTitle">未完成的念头</h2><button type="button" id="libDraftsClose" class="ghost">关闭</button></div><p>每张卡片独立暂存，随时接着写。</p><div id="libDraftsList" class="library-drafts-list"></div></dialog>
+<dialog id="libEditor" class="library-dialog" aria-labelledby="libEditorHeading"><form id="libForm"><div class="library-dialog-head"><div><h2 id="libEditorHeading">收集灵感</h2></div><button type="button" class="ghost" id="libClose" aria-label="关闭编辑器">✕</button></div><label for="libTitle">标题</label><input id="libTitle" type="text" maxlength="120" placeholder="标题可留空，会从内容自动命名"><label for="libNote">我的想法</label><textarea id="libNote" maxlength="20000" rows="5" placeholder="值得借鉴的点、自己的联想，或暂时没想清楚的问题…"></textarea><details class="creative-details"><summary>分类、标签与来源 <span>以后再整理也可以</span></summary><div class="library-form-row"><div><label for="libType">类型</label><select id="libType"><option>随手记</option><option>玩法想法</option><option>竞品参考</option><option>表现参考</option><option>问题与观察</option></select></div><div><label for="libState">整理状态</label><select id="libState"><option value="inbox">待整理</option><option value="featured">精选</option><option value="archived">归档</option></select></div></div><label for="libSource">来源链接 <small>可选 · 仅保存链接，不自动抓取网页</small></label><input id="libSource" type="url" placeholder="https://…"><button type="button" class="ghost library-source-open" id="libOpenSource">打开来源 ↗</button><label for="libTagInput">标签 <small>用逗号分隔，最多 12 个</small></label><input id="libTagInput" type="text" maxlength="300" placeholder="赛季，奖励，界面"></details><div class="library-attachment-heading"><span>素材附件 <small>单文件不超过 25 MB</small></span><button type="button" class="ghost" id="libAddFiles">＋ 添加文件</button><input type="file" id="libFiles" multiple hidden></div><div id="libAttachments" class="library-attachments"></div><p class="library-editor-hint">可在这里粘贴截图、拖入文件。文字和附件会暂存为草稿。</p><p id="libEditorMessage" class="module-message" role="status"></p><div class="library-dialog-actions"><span id="libDraftState"></span><button type="button" class="ghost" id="libExportCard" hidden>导出已保存卡片</button><button type="button" class="ghost" id="libDiscardDraft">放弃草稿</button><button type="submit" class="hbtn primary" id="libSave">保存灵感</button></div></form></dialog>
+
+
+  <section id="focusView" class="focus-view" aria-labelledby="focusHeading" hidden>
+    <header class="focus-heading"><div><h1 id="focusHeading">专注舱</h1><p>选择任务和时长，开始专注。</p></div><div class="focus-heading-actions"><button type="button" class="ghost" id="focusMotionToggle" aria-pressed="true">动效：开</button><button type="button" class="ghost" id="focusFullscreen">⛶ 全屏专注</button></div></header>
+    <div class="focus-layout">
+      <div class="focus-console"><div class="focus-atmosphere" aria-hidden="true"><canvas id="focusDreamCanvas" class="focus-dream-canvas"></canvas></div>
+        <div class="focus-console-top"><span><b id="focusMode">准备就绪</b></span><span class="focus-led" aria-hidden="true"></span></div>
+        <p class="focus-target" id="focusTarget">选定一件事，然后开始。</p>
+        <div class="focus-dial"><svg viewBox="0 0 288 288" aria-hidden="true"><circle class="focus-track" cx="144" cy="144" r="124"/><circle class="focus-progress" id="focusProgress" cx="144" cy="144" r="124" pathLength="100"/></svg><div class="focus-clock"><span id="focusClock" role="timer" aria-label="剩余时间">25:00</span><span id="focusClockHint">等待开始</span></div></div>
+        <div class="focus-controls"><button type="button" class="hbtn primary" id="focusStart">开始专注</button><button type="button" class="hbtn" id="focusPause" hidden>暂停</button><button type="button" class="ghost" id="focusFinish" hidden>结束本轮</button></div>
+        <div class="focus-session-caption" aria-hidden="true"><i></i><span>SIDEREAL / ONE QUIET SESSION</span><i></i></div><p class="focus-footnote">可以切换模块，计时会继续。关闭页面后声音停止，回来仍可恢复计时。</p>
+        <div id="focusReview" class="focus-review" hidden><h2 id="focusReviewHeading">这一段专注，留下了什么？</h2><label for="focusNote">一句进展 <span>可选 · 自动暂存</span></label><textarea id="focusNote" maxlength="1000" rows="3" placeholder="推进了什么？下一步从哪里继续？"></textarea><label class="focus-check"><input type="checkbox" id="focusSync" checked> 同步到关联任务的备注</label><div class="focus-review-actions"><button type="button" class="hbtn primary" id="focusSave">保存本轮</button><button type="button" class="ghost" id="focusDiscard">不保存，结束本轮</button><button type="button" class="ghost" id="focusReturn" hidden>返回继续专注</button></div></div>
+      </div>
+      <aside class="focus-settings"><div class="focus-section-label">专注设置</div>
+        <fieldset id="focusSetup"><label for="focusTask">关联今日计划</label><select id="focusTask"><option value="">不关联任务</option></select><label for="focusIntent">本次想做的事</label><input type="text" id="focusIntent" maxlength="120" placeholder="例如：完成活动方案第一版"><div class="focus-field-label">专注时长</div><div class="focus-presets"><button type="button" data-minutes="25" aria-pressed="true">25 分钟</button><button type="button" data-minutes="45" aria-pressed="false">45 分钟</button><button type="button" data-minutes="60" aria-pressed="false">60 分钟</button></div><label class="focus-duration" for="focusMinutes"><span>自定义</span><input type="number" id="focusMinutes" min="1" max="180" step="1" value="25"><span>分钟</span></label></fieldset>
+        <div class="focus-setting-divider"></div><div class="focus-section-label">声音设置</div><label for="focusSound">环境音</label><select id="focusSound"><option value="mute">静音</option><option value="rain">细雨 · 柔和雨声</option><option value="space">深空 · 低频氛围</option></select><label class="focus-volume" for="focusVolume">音量 <input type="range" id="focusVolume" min="0" max="50" value="20"><output id="focusVolumeLabel">20%</output></label><button type="button" class="ghost" id="focusEnableAudio" hidden>启用环境音</button><p class="focus-help" id="focusAudioHint">环境音仅在专注进行时播放。</p>
+        <div class="focus-setting-divider"></div><div class="focus-today"><span>今日投入</span><b id="focusTodayMinutes">0 分钟</b><small id="focusTodayCount">0 轮已保存</small></div><button type="button" class="ghost focus-garden-link" id="focusGoGarden">去锦鲤庭歇一会 ↗</button>
+      </aside>
+    </div>
+    <p class="focus-message" id="focusMessage" role="status" aria-live="polite"></p>
+    <section class="focus-history-section" aria-labelledby="focusHistoryHeading"><div class="focus-history-heading"><h2 id="focusHistoryHeading">最近的专注</h2><span>保存在本浏览器 · 最近 200 轮</span></div><div id="focusHistory" class="focus-history"></div></section>
+  </section>
+
+  <section id="notesView" class="notes-view" aria-labelledby="notesHeading" hidden>
+    <header class="notes-heading">
+      <div><h1 id="notesHeading">便签</h1><p>Alt + N 新建</p></div>
+      <div class="notes-toolbar"><button type="button" class="hbtn" id="notesImport">导入备份</button><button type="button" class="hbtn" id="notesExport">导出备份</button><button type="button" class="hbtn primary" id="notesNew">＋ 新建便签</button></div>
+      <input id="notesImportFile" type="file" accept=".json,application/json" hidden>
+    </header>
+    <div class="notes-shell" id="notesShell">
+      <aside class="notes-sidebar" aria-label="便签列表">
+        <div class="notes-search"><input id="notesSearch" type="search" maxlength="200" placeholder="搜索标题、正文…" aria-label="搜索便签"></div>
+        <div class="notes-tabs" role="group" aria-label="便签状态"><button type="button" id="notesTab-active" aria-pressed="true">使用中<small id="notesCount-active">0</small></button><button type="button" id="notesTab-hidden" aria-pressed="false">隐藏<small id="notesCount-hidden">0</small></button><button type="button" id="notesTab-trash" aria-pressed="false">回收站<small id="notesCount-trash">0</small></button></div>
+        <div class="notes-list-top"><span id="notesListCount">0 张便签</span><select id="notesSort" aria-label="便签排序"><option value="recent">最近编辑</option><option value="created">最近创建</option><option value="title">标题排序</option></select></div>
+        <div class="notes-list" id="notesList"></div>
+      </aside>
+      <div class="notes-desktop">
+        <div class="notes-board-toolbar"><button type="button" id="notesToggleList" class="notes-small-button" aria-expanded="true">收起列表</button><span id="notesBoardHint">拖动顶栏移动 · 拉动右下角缩放</span><div><button type="button" id="notesArrangeUndo" class="notes-small-button" hidden>撤销排列</button><button type="button" id="notesArrange" class="notes-small-button">整理排列</button><button type="button" id="notesRestore" class="notes-small-button" hidden>重新显示</button><button type="button" id="notesEmptyTrash" class="notes-small-button" hidden>清空回收站</button></div></div>
+        <div class="notes-canvas-controls" id="notesCanvasControls"><button type="button" id="notesZoomOut" aria-label="缩小画布">−</button><button type="button" id="notesZoomReset" title="恢复 100%">100%</button><button type="button" id="notesZoomIn" aria-label="放大画布">＋</button><span></span><button type="button" id="notesFit">查看全部</button><button type="button" id="notesLocate">回到选中</button></div><div class="notes-board-viewport" id="notesViewport"><div class="notes-board" id="notesBoard" aria-label="自由便签板"></div><div class="notes-empty" id="notesEmpty"><span aria-hidden="true">▱</span><h2 id="notesEmptyTitle">留一张纸，接住随手的想法。</h2><p id="notesEmptyCopy">新建便签后，可拖动顶栏调整位置，拉动右下角调整大小。</p><button type="button" class="hbtn" id="notesEmptyNew">写下第一张便签</button></div></div>
+      </div>
+    </div>
+    <div class="notes-statusbar"><span id="notesSaveState" role="status">自动保存已就绪</span><button type="button" id="notesRetry" class="notes-small-button" hidden>重试保存</button><span id="notesMessage" class="notes-message" role="status"></span><button type="button" id="notesUndo" class="notes-small-button" hidden>撤销</button><small>内容保存在本浏览器 · 建议每月导出一次备份</small></div>
+    <div id="notesMenu" class="notes-menu" role="menu" aria-label="便签操作" hidden><div class="notes-colors" id="notesColors" role="group" aria-label="便签颜色"></div><button type="button" id="notesMenuPin" role="menuitem">在列表置顶</button><button type="button" id="notesMenuHide" role="menuitem">隐藏便签</button><button type="button" id="notesMenuFork" role="menuitem">从这里分叉 ↗</button><button type="button" id="notesMenuGroup" role="menuitem">放入想法分组…</button><button type="button" id="notesMenuCollect" role="menuitem">收进灵感馆 ↗</button><button type="button" id="notesMenuSnapshot" role="menuitem">留一版当前内容</button><button type="button" id="notesMenuHistory" role="menuitem">最近历史版本</button><button type="button" id="notesMenuText" role="menuitem">导出此便签 TXT</button><button type="button" id="notesMenuDelete" role="menuitem" class="notes-danger">移入回收站</button></div>
+  </section>
+  <dialog id="notesGroupDialog" class="notes-dialog" aria-labelledby="notesGroupTitle"><h2 id="notesGroupTitle">把相关的念头放在一起</h2><p>同名分组会显示在一个轻边框里。移动、编辑仍然独立；清空名称可退出分组。</p><form id="notesGroupForm"><label for="notesGroupName">分组名称</label><input id="notesGroupName" maxlength="60" list="notesGroupOptions" placeholder="例如：活动玩法的另一种可能"><datalist id="notesGroupOptions"></datalist><div class="notes-dialog-actions"><button type="button" class="hbtn" id="notesGroupClose">取消</button><button type="submit" class="hbtn primary">保存分组</button></div></form></dialog>
+  <dialog id="notesHistoryDialog" class="notes-dialog" aria-labelledby="notesHistoryHeading"><h2 id="notesHistoryHeading">最近历史版本</h2><p>保留最近 5 个内容快照，连续输入按约两分钟合并；也可从便签菜单手动留一版。恢复时，当前内容也会保留为历史版本。</p><label for="notesVersionSelect">保存时间</label><select id="notesVersionSelect"></select><textarea id="notesVersionText" aria-label="历史内容预览" readonly></textarea><div class="notes-dialog-actions"><button type="button" class="hbtn" id="notesHistoryClose">关闭</button><button type="button" class="hbtn primary" id="notesVersionRestore">恢复此版本</button></div></dialog>
+  <section id="gardenView" class="garden-view" aria-label="锦鲤庭" hidden>
+    <div class="garden-stage"><iframe id="gardenFrame" title="游心 · 互动锦鲤庭" data-src="assets/koi-garden.html" sandbox="allow-scripts" allow="fullscreen" allowfullscreen></iframe></div>
+  </section>
+</main>
+
+<!-- 归档抽屉 -->
+<div class="veil" id="veil"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3>历史归档</h3>
+    <button class="x" id="btnDrawerX">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<!-- 结算弹窗 -->
+<div class="modal" id="modal">
+  <div class="mcard">
+    <div class="mtag">DAY SETTLEMENT · 每日结算</div>
+    <h3>昨日战报 <span>已归档</span></h3>
+    <div class="msub">已按「表格 + Markdown」双格式备份;未完成的主线任务将顺延至今日待办列表。</div>
+    <div class="mstats" id="mstats"></div>
+    <pre class="mpre" id="mpre"></pre>
+    <div class="mbtns">
+      <button class="ghost" id="btnCopyMd">⧉ 复制 Markdown</button>
+      <button class="ghost" id="btnDlMd">⬇ 下载 .md</button>
+      <button class="hbtn primary" id="btnStartDay">☀ 开启新的一天</button>
+    </div>
+  </div>
+</div>
+<!-- 今日总结提醒 -->
+<div class="modal" id="summaryRemindModal">
+  <div class="mcard">
+    <div class="mtag">SUMMARY REMINDER · 总结提醒</div>
+    <h3>今日总结 <span>尚未填写</span></h3>
+    <div class="msub" id="summaryRemindSub">请先写下今日总结内容，再结束今天的工作。</div>
+    <div class="mbtns">
+      <button class="hbtn primary" id="btnGoSummary">去填写今日总结</button>
+    </div>
+  </div>
+</div>
+<dialog id="directoryDialog" class="directory-dialog" aria-labelledby="directoryHeading">
+  <h2 id="directoryHeading">绑定目录</h2><p class="directory-intro">分别选择两个文件夹。浏览器刷新后如需再次授权，可在这里恢复连接。</p>
+  <section class="directory-row"><div><h3>任务记录</h3><p id="recordsDirStatus" role="status">正在读取…</p><code>任务记录</code><p>每日 MD 与任务自动备份</p></div><div><button type="button" class="hbtn" id="recordsDirChoose">选择 / 更换</button><button type="button" class="hbtn" id="recordsDirAuthorize" hidden>重新授权</button></div></section>
+  <section class="directory-row"><div><h3>归档</h3><p id="archiveDirStatus" role="status">正在读取…</p><code>归档</code><p>跨月归档按 年 / 年-月 / 01_工作日志 保存</p></div><div><button type="button" class="hbtn" id="archiveDirChoose">选择 / 更换</button><button type="button" class="hbtn" id="archiveDirAuthorize" hidden>重新授权</button></div></section>
+  <p class="directory-message" id="directoryMessage" role="status"></p><div class="directory-footer"><button type="button" class="hbtn" id="directoryBackup">检查写入并备份任务</button><button type="button" class="hbtn primary" id="directoryClose">完成</button></div>
+</dialog>
+<div id="toastbox"></div>
+
+<script src="assets/task-directories.js"></script>
+<script>
+/* ================= 状态 ================= */
+const KEY='gpdQuestLog.v1', DAY_MS=864e5, WK='日一二三四五六';
+const CATS={plan:'规划',doc:'文档',req:'需求',cfg:'配置',mgmt:'管理',misc:'其他'};
+const LEGACY_CATS={sys:'系统',num:'数值',art:'美术',prog:'程序',mtg:'会议',lvl:'关卡'};
+const catLabel=c=>CATS[c]||LEGACY_CATS[c]||c;
+const PRIO_SCORE={P0:3,P1:2,P2:1};
+const nowHM=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+const hmToMin=hm=>{const[h,m]=String(hm||'').split(':').map(Number);return (h||0)*60+(m||0)};
+const fmtDelay=mins=>{
+  mins=Math.max(0,Math.round(+mins||0)); if(!mins)return '';
+  const h=Math.floor(mins/60), m=mins%60;
+  if(h&&m)return h+'小时'+m+'分';
+  if(h)return h+'小时';
+  return m+'分钟';
+};
+const delayText=i=>i.delayMin>0?('延迟'+fmtDelay(i.delayMin)):'';
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const todayStr=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function defaultState(){
+  return {
+    date:todayStr(), firstDay:todayStr(), streak:1,
+    main:[],
+    side:[],
+    summary:'', mood:'', buff:'', lastArchived:'', summaryReminded:'',
+    archives:[],
+  };
+}
+
+function load(){
+  try{const raw=localStorage.getItem(KEY); if(raw){const s=JSON.parse(raw); if(s&&s.date) return s;}}catch(e){}
+  return null;
+}
+function stateScore(s){
+  if(!s||!s.date) return -1;
+  return (s.archives||[]).length*10000+(s.main||[]).length*100+(s.side||[]).length*10+String(s.summary||'').length;
+}
+let backupTimer=null;
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  clearTimeout(backupTimer);
+  backupTimer=setTimeout(()=>{writeStateBackup(false)},600);
+}
+async function writeStateBackup(interactive){
+  try{
+    const dir=await getRecordsDir(!!interactive);
+    if(!dir) return false;
+    const f=await dir.getFileHandle('gpdQuestLog_autosave.json',{create:true});
+    const w=await f.createWritable();
+    await w.write(JSON.stringify(S));
+    await w.close();
+    return true;
+  }catch(e){return false}
+}
+async function tryRestoreFromDiskBackup(){
+  try{
+    const dir=await getRecordsDir(false);
+    if(!dir) return false;
+    let file;
+    try{
+      const fh=await dir.getFileHandle('gpdQuestLog_autosave.json');
+      file=await fh.getFile();
+    }catch(e){
+      try{
+        const fh=await dir.getFileHandle('gpdQuestLog_recovered.json');
+        file=await fh.getFile();
+      }catch(e2){return false}
+    }
+    const disk=JSON.parse(await file.text());
+    if(stateScore(disk)<=stateScore(S)) return false;
+    S=disk;
+    try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+    return true;
+  }catch(e){return false}
+}
+/* DIRECTORY_BINDING_START */
+const IDB_NAME='questLogDirs', IDB_STORE='handles';
+const RECORDS_DIR_HINT='「任务记录」文件夹';
+const ARCHIVE_DIR_HINT='「归档」文件夹';
+function idbOpen(){return new Promise((res,rej)=>{const q=indexedDB.open(IDB_NAME,1);
+  q.onupgradeneeded=()=>q.result.createObjectStore(IDB_STORE);
+  q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
+  q.onblocked=()=>rej(new Error('目录授权存储被占用，请关闭其他看板窗口后重试'));})}
+async function idbGet(k){let db;try{db=await idbOpen();return await new Promise((res,rej)=>{
+  const r=db.transaction(IDB_STORE).objectStore(IDB_STORE).get(k);
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});}finally{db?.close();}}
+async function idbSet(k,v){let db;try{db=await idbOpen();await new Promise((res,rej)=>{
+  const tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).put(v,k);
+  tx.oncomplete=res; tx.onerror=tx.onabort=()=>rej(tx.error||new Error('未能保存目录授权'));});}finally{db?.close();}}
+async function idbDel(k){let db;try{db=await idbOpen();await new Promise((res,rej)=>{
+  const tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).delete(k);
+  tx.oncomplete=res; tx.onerror=tx.onabort=()=>rej(tx.error);});}catch(e){}finally{db?.close();}}
+const RECORDS_KEY='recordsDir.v3', ARCHIVE_KEY='archiveDir.v1';
+const taskDirectoryBindings=TaskDirectories.create({readHandle:idbGet,writeHandle:idbSet,notify:toast,
+  afterBind:async kind=>{if(kind==='archive')await archivePastMonthMds();},backupNow:()=>writeStateBackup(false)});
+async function grantDir(key,pickerId,folderName,hint,interactive){return taskDirectoryBindings.get(key,pickerId,folderName,hint,interactive);}
+async function getRecordsDir(interactive){
+  try{if(!localStorage.getItem('recordsDirMigrated.v3')){
+    await idbDel('recordsDir'); await idbDel('recordsDir.v2'); localStorage.setItem('recordsDirMigrated.v3','1');
+  }}catch(e){}
+  return grantDir(RECORDS_KEY,'quest-log-records-v3','任务记录',RECORDS_DIR_HINT,interactive);
+}
+async function getArchiveDir(interactive){return grantDir(ARCHIVE_KEY,'quest-log-archive-v1','归档',ARCHIVE_DIR_HINT,interactive);}
+/* DIRECTORY_BINDING_END */
+
+let S=load(); const IS_NEW=!S; if(IS_NEW) S=defaultState();
+if(S.mood==null) S.mood='';
+if(S.summary==null) S.summary='';
+if(S.buff==null) S.buff='';
+if(S.summaryReminded==null) S.summaryReminded='';
+if(S.lastArchived==null){
+  S.lastArchived=(S.archives&&S.archives.length)?S.archives[S.archives.length-1].date:'';
+}
+/* 同一日期若存在多份归档(旧版重复结算),只保留内容最完整的一份 */
+function archMain(a){return (a&&(a.main||a.items))||[]}
+function archSide(a){return (a&&a.side)||[]}
+function archiveScore(a){
+  if(!a)return -1;
+  return archMain(a).length*1000+archSide(a).length*10+((a.summary&&a.summary.trim())?1:0)+((a.mood&&String(a.mood).trim())?1:0);
+}
+function bestArchiveFor(date){
+  let best=null;
+  for(const a of(S.archives||[])){
+    if(a.date!==date)continue;
+    if(!best||archiveScore(a)>archiveScore(best)) best=a;
+  }
+  return best;
+}
+function dedupeArchives(){
+  if(!S.archives||!S.archives.length)return false;
+  const map=new Map();
+  for(const a of S.archives){
+    const prev=map.get(a.date);
+    if(!prev||archiveScore(a)>=archiveScore(prev)) map.set(a.date,a);
+  }
+  const next=[...map.keys()].sort().map(d=>map.get(d));
+  if(next.length===S.archives.length&&next.every((a,i)=>a===S.archives[i]))return false;
+  S.archives=next; return true;
+}
+if(dedupeArchives()) save();
+function mdFromArchive(a){
+  return mdFor(a.date,archMain(a),archSide(a),a.summary,a.buff,a.mood);
+}
+
+/* ================= 时钟 / HUD ================= */
+function tickClock(){
+  const n=new Date();
+  document.getElementById('clock').innerHTML=
+    String(n.getHours()).padStart(2,'0')+'<b>:</b>'+String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('dateline').textContent=
+    `${n.getFullYear()}年${n.getMonth()+1}月${n.getDate()}日 · 星期${WK[n.getDay()]}`;
+  refreshOverdue();
+  checkSummaryReminder();
+}
+function refreshOverdue(){   // 每分钟级:到点的限时任务标红
+  const hm=nowHM();
+  document.querySelectorAll('#listMain .qcard').forEach(card=>{
+    const hit=findItem(card.dataset.id); if(!hit||hit.i.done)return;
+    const late=!!hit.i.time&&hm>hit.i.time;
+    card.classList.toggle('late',late);
+    card.querySelector('.qtime')?.classList.toggle('over',late);
+  });
+}
+/* 周一至周四 20:30、周五 18:30:今日总结为空则弹窗提醒(每日仅一次) */
+function summaryRemindAt(){
+  const d=new Date().getDay();           // 0日 … 5五 6六
+  if(d>=1&&d<=4) return '20:30';
+  if(d===5) return '18:30';
+  return null;
+}
+function checkSummaryReminder(){
+  const at=summaryRemindAt(); if(!at) return;
+  const t=todayStr();
+  if(S.summaryReminded===t) return;
+  if(nowHM()<at) return;
+  const live=document.getElementById('summaryText');
+  const text=((live?live.value:S.summary)||'').trim();
+  if(text){ S.summaryReminded=t; save(); return; }
+  S.summaryReminded=t; save();
+  const tip=document.getElementById('summaryRemindSub');
+  if(tip) tip.textContent=`今天是星期${WK[new Date().getDay()]} · 提醒点 ${at}。检测到「今日总结」仍为空,请先填写后再离开。`;
+  document.getElementById('summaryRemindModal')?.classList.add('show');
+}
+tickClock(); setInterval(tickClock,15000);
+
+function paintHUD(){
+  const all=S.main;   // 顶部进度条只统计今日计划,不含待办池
+  const done=all.filter(i=>i.done).length, pct=all.length?Math.round(done/all.length*100):0;
+  document.getElementById('xpnum').textContent=`${done}/${all.length} · ${pct}%`;
+  document.getElementById('xpfill').style.width=pct+'%';
+}
+
+/* ================= 渲染卡片 ================= */
+function dueHtml(it){
+  if(!it.due) return '';
+  const over=it.due<todayStr();
+  return `<span class="due${over?' over':''}" title="预期完成日期">${it.due.slice(5)}${over?' 逾期':''}</span>`;
+}
+function delayHtml(it){
+  if(!it.done||!(it.delayMin>0)) return '';
+  const t=fmtDelay(it.delayMin);
+  return `<span class="delay" title="完成时间晚于预期 · 实际完成于 ${it.doneAt||'—'}">🐢 延迟 ${t}</span>`;
+}
+/* 10:00–22:00 半小时时段 */
+const TIME_SLOTS=(()=>{
+  const pad=n=>String(n).padStart(2,'0'), list=[];
+  for(let h=10;h<=22;h++){
+    list.push(`${pad(h)}:00`);
+    if(h<22) list.push(`${pad(h)}:30`);
+  }
+  return list;
+})();
+function nearestTimeSlot(hm){
+  const t=hm&&/^\d{2}:\d{2}/.test(hm)?hm:nowHM();
+  if(TIME_SLOTS.includes(t)) return t;
+  let best=TIME_SLOTS[0], bd=Infinity;
+  const tm=hmToMin(t);
+  for(const s of TIME_SLOTS){
+    const d=Math.abs(hmToMin(s)-tm);
+    if(d<bd){bd=d; best=s}
+  }
+  return best;
+}
+function fmtDueLab(d){
+  if(!d)return '';
+  const dt=new Date(d+'T12:00:00');
+  return `${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} 周${WK[dt.getDay()]}`;
+}
+function buildDateSlots(cur){
+  const t=todayStr();
+  const startStr=(cur&&cur<t)?cur:t;
+  const start=new Date(startStr+'T12:00:00');
+  const list=[];
+  for(let i=0;i<60;i++){
+    const x=new Date(start); x.setDate(start.getDate()+i);
+    list.push(todayStr(x));
+  }
+  if(cur&&!list.includes(cur)) list.unshift(cur);
+  return list;
+}
+let tpickPop=null, tpickCloser=null;
+function closeTimePicker(){
+  if(tpickCloser){document.removeEventListener('mousedown',tpickCloser,true); tpickCloser=null}
+  tpickPop?.remove(); tpickPop=null;
+}
+function placePicker(pop,anchor){
+  const r=anchor.getBoundingClientRect();
+  const pw=pop.offsetWidth, ph=pop.offsetHeight;
+  let left=r.left, top=r.bottom+6;
+  if(left+pw>window.innerWidth-8) left=Math.max(8, window.innerWidth-pw-8);
+  if(top+ph>window.innerHeight-8) top=Math.max(8, r.top-ph-6);
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+}
+function bindPickerOutside(pop,anchor){
+  tpickCloser=e=>{ if(!pop.contains(e.target)&&e.target!==anchor&&!anchor.contains(e.target)) closeTimePicker(); };
+  setTimeout(()=>document.addEventListener('mousedown',tpickCloser,true),0);
+}
+function scrollPickerNear(pop){
+  const nearEl=pop.querySelector('.tpick-item.near')||pop.querySelector('.tpick-item.on');
+  if(!nearEl)return;
+  const grid=pop.querySelector('.tpick-grid');
+  const gr=grid.getBoundingClientRect(), er=nearEl.getBoundingClientRect();
+  grid.scrollTop+=er.top-gr.top-(gr.height/2-er.height/2);
+}
+function openTimePicker(anchor, cur, onPick){
+  closeTimePicker();
+  const pop=document.createElement('div');
+  pop.className='tpick-pop';
+  pop.innerHTML=`<div class="tpick-hd"><span>10:00 – 22:00</span><button type="button" data-t="">清除</button></div>
+    <div class="tpick-grid">${TIME_SLOTS.map(t=>`<button type="button" class="tpick-item" data-t="${t}">${t}</button>`).join('')}</div>`;
+  document.body.appendChild(pop);
+  tpickPop=pop;
+  const focus=cur&&TIME_SLOTS.includes(cur)?cur:nearestTimeSlot(nowHM());
+  pop.querySelectorAll('.tpick-item').forEach(btn=>{
+    if(btn.dataset.t===cur) btn.classList.add('on');
+    if(btn.dataset.t===focus) btn.classList.add('near');
+  });
+  placePicker(pop,anchor);
+  scrollPickerNear(pop);
+  const pick=v=>{ closeTimePicker(); onPick(v); };
+  pop.addEventListener('click',e=>{
+    const b=e.target.closest('[data-t]'); if(!b)return;
+    e.preventDefault(); e.stopPropagation();
+    pick(b.dataset.t||'');
+  });
+  bindPickerOutside(pop,anchor);
+}
+function openDatePicker(anchor, cur, onPick){
+  closeTimePicker();
+  const slots=buildDateSlots(cur);
+  const today=todayStr();
+  const pop=document.createElement('div');
+  pop.className='tpick-pop date';
+  pop.innerHTML=`<div class="tpick-hd"><span>预期完成日期</span><button type="button" data-t="">清除</button></div>
+    <div class="tpick-grid">${slots.map(d=>{
+      const over=d<today?' over':'';
+      return `<button type="button" class="tpick-item${over}" data-t="${d}" title="${d}">${fmtDueLab(d)}</button>`;
+    }).join('')}</div>`;
+  document.body.appendChild(pop);
+  tpickPop=pop;
+  const focus=cur&&slots.includes(cur)?cur:today;
+  pop.querySelectorAll('.tpick-item').forEach(btn=>{
+    if(btn.dataset.t===cur) btn.classList.add('on');
+    if(btn.dataset.t===focus) btn.classList.add('near');
+  });
+  placePicker(pop,anchor);
+  scrollPickerNear(pop);
+  pop.addEventListener('click',e=>{
+    const b=e.target.closest('[data-t]'); if(!b)return;
+    e.preventDefault(); e.stopPropagation();
+    closeTimePicker(); onPick(b.dataset.t||'');
+  });
+  bindPickerOutside(pop,anchor);
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeTimePicker(); });
+function timeBadge(it,panel){
+  const over=!it.done&&it.time&&nowHM()>it.time;
+  const cls=it.done?'ok':over?'over':'';
+  const clear=it.time&&!it.done?`<button type="button" class="qtime-x" data-act="cleartime" title="清除预计完成时间">×</button>`:'';
+  return `<span class="qtime-wrap"><button type="button" class="qtime ${cls}" data-act="picktime" ${it.done?'disabled':''} title="${it.time?'修改预计完成时间(10:00–22:00 · 半小时)':'设定预计完成时间 · 10:00–22:00 半小时(超时将标红)'}">⏱ ${it.time||'设定'}</button>${clear}</span>`;
+}
+function dueBadge(it){
+  const over=!it.done&&it.due&&it.due<todayStr();
+  const clear=it.due&&!it.done?`<button type="button" class="qtime-x" data-act="cleardue" title="清除预期完成日期">×</button>`:'';
+  const lab=it.due?(it.due.slice(5)+(over?' 逾期':'')):'设定日期';
+  return `<span class="qtime-wrap"><button type="button" class="qdue${over?' over':''}" data-act="pickdue" ${it.done?'disabled':''} title="${it.due?'修改预期完成日期':'设定预期完成日期'}">📅 ${lab}</button>${clear}</span>`;
+}
+let editingId=null, openNoteId=null;
+function catOptions(sel){return Object.keys(CATS).map(k=>`<option value="${k}"${k===sel?' selected':''}>${CATS[k]}</option>`).join('')}
+function prioOptions(sel){return ['P0','P1','P2'].map(p=>`<option value="${p}"${p===sel?' selected':''}>${p} ${p==='P0'?'紧急':p==='P1'?'重要':'常规'}</option>`).join('')}
+function editFormHtml(it){
+  return `<div class="qedit-form">
+    <input class="ed-title" value="${esc(it.text)}" placeholder="任务标题" maxlength="120">
+    <textarea class="ed-body" rows="2" placeholder="正文(可选):需求细节、验收标准、上下文…">${esc(it.body||'')}</textarea>
+    <div class="ed-row">
+      <select class="ed-cat">${catOptions(it.cat)}</select>
+      <select class="ed-prio">${prioOptions(it.prio)}</select>
+      <button class="ed-save" data-act="save" title="Ctrl+Enter 也可保存">保存</button>
+      <button class="ed-cancel" data-act="cancel">取消</button>
+    </div>
+  </div>`;
+}
+function notePanelHtml(it){
+  return `<div class="qnote-panel">
+    <textarea class="qnote-ta" placeholder="给这条任务写点备注(输入即自动保存)…">${esc(it.note||'')}</textarea>
+    <div class="qnote-ops">
+      <span class="qnote-hint">输入自动保存 · 可留空</span>
+      <button class="ed-save" data-act="notesave">存好收起</button>
+      <button class="ed-cancel" data-act="noteclose">收起</button>
+    </div>
+  </div>`;
+}
+function cardHtml(it,panel){
+  const late=panel==='main'&&!it.done&&it.time&&nowHM()>it.time;
+  const editing=editingId===it.id, noting=openNoteId===it.id;
+  return `<li class="qcard q-${it.prio}${it.done?' done':''}${late?' late':''}${editing?' editing':''}" draggable="${!editing}" data-id="${it.id}">
+    <button class="qcheck${it.done?' on':''}" data-act="toggle" title="完成 / 撤销">✓</button>
+    ${editing?'':`<div class="qtitle" data-act="edittitle" title="点击编辑">${esc(it.text)}</div>`}
+    <div class="qbodywrap">
+      ${editing||!it.body?'':`<div class="qbody">${esc(it.body)}</div>`}
+      ${editing?editFormHtml(it):''}
+      ${!editing&&noting?notePanelHtml(it):''}
+    </div>
+    ${editing||noting?'':`<div class="qmeta">
+      <span class="cat">${catLabel(it.cat)}</span>
+      <span class="prio">${it.prio}</span>
+      ${panel==='main'?timeBadge(it,panel):dueBadge(it)}
+      ${delayHtml(it)}
+      ${it.from?`<span class="carry" title="昨日未完成顺延 · 修改预计完成时间后自动摘除标记" style="color:var(--blue);border:1px solid rgba(111,178,242,.4);border-radius:4px;font-size:9.5px;padding:1px 5px">⤴ ${it.from} 顺延</span>`:''}
+    </div>`}
+    <div class="qrail">
+      <button class="qedit" data-act="edit" title="编辑内容 / 分类 / 优先级">✎</button>
+      <button class="qnote-btn${it.note?' hasnote':''}" data-act="note" title="备注${it.note?'(已有)':''}">💬</button>
+      <button class="qx" data-act="del" title="删除">✕</button>
+    </div>
+  </li>`;
+}
+let filterMain=null, filterSide=null;
+function render(){
+  closeTimePicker();
+  const lm=document.getElementById('listMain'), ls=document.getElementById('listSide');
+  const order=(a,b)=>(a.done-b.done)||(PRIO_SCORE[b.prio]-PRIO_SCORE[a.prio]);
+  const visM=S.main.filter(i=>!filterMain||i.cat===filterMain);
+  const visS=S.side.filter(i=>!filterSide||i.cat===filterSide);
+  lm.innerHTML=visM.length?visM.slice().sort(order).map(i=>cardHtml(i,'main')).join('')
+    :`<div class="empty">${S.main.length?'当前筛选下没有任务':'今日主线为空'}<small>${S.main.length?'点上方分类标签可切换筛选':'从右侧待办池拖一条进来,或在下方接取新任务'}</small></div>`;
+  ls.innerHTML=visS.length?visS.slice().sort(order).map(i=>cardHtml(i,'side')).join('')
+    :`<div class="empty">${S.side.length?'当前筛选下没有任务':'待办池空空如也'}<small>${S.side.length?'点上方分类标签可切换筛选':'随手记下的事项都会在这里囤着'}</small></div>`;
+  document.getElementById('cntMain').textContent=filterMain?`${visM.length}/${S.main.length}`:S.main.length;
+  document.getElementById('cntSide').textContent=filterSide?`${visS.length}/${S.side.length}`:S.side.length;
+  paintFilters(); paintHUD(); paintBuffs();
+  if(editingId)document.querySelector(`[data-id="${editingId}"] .ed-title`)?.focus();
+  if(openNoteId)document.querySelector(`[data-id="${openNoteId}"] .qnote-ta`)?.focus();
+}
+function paintFilters(){
+  document.querySelectorAll('.fbtn').forEach(b=>{
+    const p=b.closest('.panel').dataset.p, cur=(p==='main'?filterMain:filterSide)||'';
+    b.classList.toggle('on',b.dataset.f===cur);
+  });
+}
+document.querySelectorAll('.fbtn').forEach(b=>b.addEventListener('click',()=>{
+  const p=b.closest('.panel').dataset.p, f=b.dataset.f||null;
+  if(p==='main')filterMain=(filterMain===f)?null:f; else filterSide=(filterSide===f)?null:f;
+  render();
+}));
+function findItem(id){for(const k of['main','side']){const i=S[k].find(x=>x.id===id); if(i)return{k,i}}return null}
+
+/* ================= 添加 ================= */
+function makeAddTimeControl(){
+  const btn=document.getElementById('addMainTimeBtn');
+  const lab=document.getElementById('addMainTimeLab');
+  const clr=document.getElementById('addMainTimeClear');
+  let val='';
+  const sync=()=>{
+    lab.textContent=val||'设定时间';
+    btn.classList.toggle('has',!!val);
+    clr.classList.toggle('show',!!val);
+  };
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    openTimePicker(btn,val,v=>{val=v; sync();});
+  });
+  clr.addEventListener('click',e=>{
+    e.stopPropagation(); val=''; sync(); closeTimePicker();
+  });
+  sync();
+  return {
+    get value(){return val},
+    set value(v){val=v||''; sync()}
+  };
+}
+function makeAddDueControl(){
+  const btn=document.getElementById('addSideDueBtn');
+  const lab=document.getElementById('addSideDueLab');
+  const clr=document.getElementById('addSideDueClear');
+  let val='';
+  const sync=()=>{
+    lab.textContent=val?fmtDueLab(val):'设定日期';
+    btn.classList.toggle('has',!!val);
+    clr.classList.toggle('show',!!val);
+  };
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    openDatePicker(btn,val,v=>{val=v; sync();});
+  });
+  clr.addEventListener('click',e=>{
+    e.stopPropagation(); val=''; sync(); closeTimePicker();
+  });
+  sync();
+  return {
+    get value(){return val},
+    set value(v){val=v||''; sync()}
+  };
+}
+function bindAdd(btnId,inputId,bodyId,catSel,prioSel,dueSel,timeEl,list){
+  const input=document.getElementById(inputId);
+  const bodyEl=document.getElementById(bodyId);
+  const go=()=>{
+    const t=input.value.trim(); if(!t) return;
+    const it={id:uid(),text:t,body:bodyEl.value.trim(),cat:catSel.value,prio:prioSel.value,
+      due:dueSel?dueSel.value||'':'',time:timeEl?timeEl.value||'':'',note:'',done:false,doneAt:'',delayMin:0,from:null};
+    S[list].push(it);
+    input.value=''; bodyEl.value=''; if(timeEl)timeEl.value=''; if(dueSel)dueSel.value=''; save(); render();
+    const el=document.querySelector(`[data-id="${it.id}"]`);
+    if(el)el.classList.add('flash');
+    toast(list==='main'?'⚔ 已接取新主线':'🎒 已放入待办池');
+  };
+  document.getElementById(btnId).addEventListener('click',go);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+}
+bindAdd('addMainBtn','addMainText','addMainBody',document.getElementById('addMainCat'),document.getElementById('addMainPrio'),null,makeAddTimeControl(),'main');
+bindAdd('addSideBtn','addSideText','addSideBody',document.getElementById('addSideCat'),document.getElementById('addSidePrio'),makeAddDueControl(),null,'side');
+
+/* ================= 卡片操作(事件委托) ================= */
+document.querySelectorAll('.qlist').forEach(ul=>{
+  ul.addEventListener('click',e=>{
+    const card=e.target.closest('.qcard'), id=card?.dataset.id, hit=id?findItem(id):null;
+    const btn=e.target.closest('[data-act]');
+    if(!btn||!hit){return}
+    const act=btn.dataset.act;
+    if(act==='cleartime'){                  // 清除预计完成时间(今日计划)
+      if(!hit.i.time)return;
+      hit.i.time='';
+      if(hit.i.from)hit.i.from=null;
+      closeTimePicker(); save(); render(); toast('⏱ 已清除预计完成时间'); return;
+    }
+    if(act==='cleardue'){                   // 清除预期完成日期(待办)
+      if(!hit.i.due)return;
+      hit.i.due='';
+      closeTimePicker(); save(); render(); toast('📅 已清除预期完成日期'); return;
+    }
+    if(act==='picktime'){                   // 设定 / 修改预计完成时间(今日计划)
+      if(hit.i.done||hit.k!=='main')return;
+      openTimePicker(btn, hit.i.time||'', v=>{
+        if(hit.i.time===v)return;
+        hit.i.time=v;
+        if(!v) toast('⏱ 已清除预计完成时间');
+        else if(hit.i.from){hit.i.from=null; toast('⏱ 已重新排期,「顺延」标记摘除')}
+        else toast('⏱ 预计完成时间已更新');
+        save(); render();
+      });
+      return;
+    }
+    if(act==='pickdue'){                    // 设定 / 修改预期完成日期(待办)
+      if(hit.i.done||hit.k!=='side')return;
+      openDatePicker(btn, hit.i.due||'', v=>{
+        if(hit.i.due===v)return;
+        hit.i.due=v;
+        toast(v?'📅 预期完成日期已更新':'📅 已清除预期完成日期');
+        save(); render();
+      });
+      return;
+    }
+    if(act==='edittitle'||act==='edit'){    // 打开编辑表单
+      editingId=id; openNoteId=null; render(); return;
+    }
+    if(act==='cancel'){editingId=null; render(); return}
+    if(act==='save'){                       // 保存标题 / 正文 / 分类 / 优先级
+      const t=card.querySelector('.ed-title').value.trim();
+      if(!t){toast('标题不能为空'); card.querySelector('.ed-title').focus(); return}
+      hit.i.text=t;
+      hit.i.body=card.querySelector('.ed-body').value.trim();
+      hit.i.cat=card.querySelector('.ed-cat').value;
+      hit.i.prio=card.querySelector('.ed-prio').value;
+      editingId=null; save(); render();
+      document.querySelector(`[data-id="${id}"]`)?.classList.add('flash');
+      toast('✓ 任务已更新'); return;
+    }
+    if(act==='note'){                       // 展开 / 收起备注
+      const ta=card.querySelector('.qnote-ta');
+      if(openNoteId===id){ if(ta)hit.i.note=ta.value.trim(); openNoteId=null; save(); }
+      else{openNoteId=id; editingId=null;}
+      render(); return;
+    }
+    if(act==='notesave'||act==='noteclose'){
+      const ta=card.querySelector('.qnote-ta'); if(ta)hit.i.note=ta.value.trim();
+      openNoteId=null; save(); render();
+      if(act==='notesave')toast('📝 备注已保存');
+      return;
+    }
+    if(act==='toggle'){
+      hit.i.done=!hit.i.done;
+      if(hit.i.done){
+        const at=nowHM();
+        hit.i.doneAt=at;
+        hit.i.delayMin=(hit.i.time&&at>hit.i.time)?(hmToMin(at)-hmToMin(hit.i.time)):0;
+      }else{
+        hit.i.doneAt=''; hit.i.delayMin=0;
+      }
+      const origin=hit.i.done?btn.getBoundingClientRect():null;
+      save(); render();
+      if(hit.i.done){
+        document.querySelector(`[data-id="${id}"]`)?.classList.add('justdone');
+        xpFloat(origin.left+origin.width/2,origin.top,'+'+(hit.i.prio==='P0'?30:hit.i.prio==='P1'?20:10)+' XP');
+        const left=[...S.main,...S.side].filter(i=>!i.done).length;
+        if(left===0)toast('🏆 今日任务全部完成,干杯!');
+        else if(hit.i.delayMin>0)toast('🐢 延迟 '+fmtDelay(hit.i.delayMin)+' 完成');
+      }
+    }else if(act==='del'){
+      if(editingId===id)editingId=null; if(openNoteId===id)openNoteId=null;
+      S[hit.k]=S[hit.k].filter(x=>x.id!==id); save(); render(); toast('已删除该条目');
+    }
+  });
+  ul.addEventListener('input',e=>{          // 备注输入即存
+    if(!e.target.classList.contains('qnote-ta'))return;
+    const hit=findItem(e.target.closest('.qcard')?.dataset.id); if(!hit)return;
+    hit.i.note=e.target.value; save();
+  });
+  ul.addEventListener('keydown',e=>{        // 编辑表单:Ctrl+Enter 保存,Esc 取消
+    if(!e.target.closest('.qedit-form'))return;
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.target.closest('.qcard')?.querySelector('[data-act="save"]')?.click()}
+    else if(e.key==='Escape'){e.target.closest('.qcard')?.querySelector('[data-act="cancel"]')?.click()}
+  });
+  /* 拖拽:卡片之间可互相挪动 */
+  ul.addEventListener('dragover',e=>{
+    e.preventDefault(); ul.classList.add('dragover');
+    const dragging=document.querySelector('.qcard.dragging'); if(!dragging)return;
+    const after=[...ul.querySelectorAll('.qcard:not(.dragging)')].find(el=>e.clientY<el.getBoundingClientRect().top+el.offsetHeight/2);
+    if(after)ul.insertBefore(dragging,after); else ul.appendChild(dragging);
+  });
+  ul.addEventListener('dragleave',e=>{if(!ul.contains(e.relatedTarget))ul.classList.remove('dragover')});
+  ul.addEventListener('drop',e=>{
+    e.preventDefault(); ul.classList.remove('dragover');
+    const id=e.dataTransfer.getData('text/plain')||document.querySelector('.qcard.dragging')?.dataset.id;
+    const hit=findItem(id); if(!hit)return;
+    const target=ul.dataset.list;
+    if(hit.k!==target){                       // 跨栏挪动:清除完成时间,可重新设定
+      S[hit.k]=S[hit.k].filter(x=>x.id!==id);
+      hit.i.time='';
+      if(editingId===id)editingId=null; if(openNoteId===id)openNoteId=null;
+      S[target].push(hit.i);
+      save(); render();
+      const el=document.querySelector(`[data-id="${id}"]`); if(el)el.classList.add('flash');
+      toast(target==='main'?'⚔ 已挪入今日计划':'🎒 已放回待办列表');
+    }else{                                    // 同栏仅排序
+      if(target==='main'?filterMain:filterSide){render();return}   // 筛选中不重排,避免顺序错乱
+      const ids=[...ul.querySelectorAll('.qcard')].map(c=>c.dataset.id);
+      S[target].sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); save(); paintHUD();
+    }
+  });
+});
+document.addEventListener('dragstart',e=>{
+  const c=e.target.closest?.('.qcard'); if(!c)return;
+  if(c.classList.contains('editing')){e.preventDefault();return}   // 编辑中不可拖
+  e.dataTransfer.setData('text/plain',c.dataset.id); e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>c.classList.add('dragging'));
+});
+document.addEventListener('dragend',e=>{e.target.closest?.('.qcard')?.classList.remove('dragging')});
+
+/* ================= 今日总结 ================= */
+const sumEl=document.getElementById('summaryText');
+sumEl.value=S.summary||'';
+let saveTimer;
+sumEl.addEventListener('input',()=>{
+  S.summary=sumEl.value;
+  document.getElementById('wcnt').textContent=sumEl.value.length+' 字';
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{save();const s=document.getElementById('saved');s.classList.add('show');setTimeout(()=>s.classList.remove('show'),1400)},450);
+});
+document.getElementById('wcnt').textContent=sumEl.value.length+' 字';
+document.getElementById('btnGoSummary')?.addEventListener('click',()=>{
+  document.getElementById('summaryRemindModal')?.classList.remove('show');
+  document.querySelector('.summary')?.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>sumEl.focus(),350);
+});
+function paintBuffs(){document.querySelectorAll('.buff').forEach(b=>b.classList.toggle('on',b.dataset.b===S.buff))}
+document.querySelectorAll('.buff').forEach(b=>b.addEventListener('click',()=>{
+  S.buff=(S.buff===b.dataset.b)?'':b.dataset.b; save(); paintBuffs();
+}));
+
+/* ================= 标头心情 / 提醒 ================= */
+const hudNote=document.getElementById('hudNote');
+const hudNoteView=document.getElementById('hudNoteView');
+const hudNoteEdit=document.getElementById('hudNoteEdit');
+const hudNoteAdd=document.getElementById('hudNoteAdd');
+let moodTimer=null;
+function paintMood(){
+  const t=(S.mood||'').trim();
+  const editing=hudNote.classList.contains('editing');
+  if(t||editing){
+    hudNote.classList.add('show');
+    hudNoteAdd.classList.remove('show');
+    hudNoteView.textContent=t;
+    if(!editing) hudNoteEdit.value=S.mood||'';
+  }else{
+    hudNote.classList.remove('show');
+    hudNoteAdd.classList.add('show');
+    hudNoteView.textContent='';
+    hudNoteEdit.value='';
+  }
+}
+function startMoodEdit(){
+  hudNote.classList.add('show','editing');
+  hudNoteAdd.classList.remove('show');
+  hudNoteEdit.value=S.mood||'';
+  hudNoteEdit.focus();
+  const len=hudNoteEdit.value.length;
+  hudNoteEdit.setSelectionRange(len,len);
+}
+function endMoodEdit(){
+  S.mood=hudNoteEdit.value.trim();
+  hudNote.classList.remove('editing');
+  save(); paintMood();
+}
+hudNoteAdd.addEventListener('click',e=>{e.stopPropagation(); startMoodEdit();});
+hudNote.addEventListener('click',e=>{
+  if(hudNote.classList.contains('editing'))return;
+  startMoodEdit();
+});
+hudNoteEdit.addEventListener('click',e=>e.stopPropagation());
+hudNoteEdit.addEventListener('input',()=>{
+  S.mood=hudNoteEdit.value;
+  clearTimeout(moodTimer);
+  moodTimer=setTimeout(()=>save(),400);
+});
+hudNoteEdit.addEventListener('blur',()=>endMoodEdit());
+hudNoteEdit.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){hudNoteEdit.blur()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){hudNoteEdit.blur()}
+});
+paintMood();
+
+function mdFor(date,main,side,summary,buff,mood){
+  const wk='星期'+WK[new Date(date+'T12:00:00').getDay()];
+  const done=main.filter(i=>i.done).length;
+  const pct=main.length?Math.round(done/main.length*100):0;
+  const tInfo=i=>{
+    if(!i.time&&!i.doneAt)return '';
+    let s='';
+    if(i.time)s+=` 预计${i.time}`;
+    if(i.done&&i.doneAt)s+=` 完成于${i.doneAt}`;
+    if(i.done&&i.delayMin>0)s+=` (${delayText(i)})`;
+    else if(!i.done&&i.time&&nowHM()>i.time)s+='(超时)';
+    else if(i.done&&i.time&&!(i.delayMin>0))s+=' ✓';
+    return s;
+  };
+  const cell=i=>{
+    let s=i.text.replace(/\|/g,'\\|');
+    if(i.body)s+='<br>▸ '+i.body.replace(/\|/g,'\\|').replace(/\r?\n/g,'<br>');
+    if(i.note)s+='<br>📝 '+i.note.replace(/\|/g,'\\|').replace(/\r?\n/g,'<br>');
+    return s;
+  };
+  const statusMain=i=>{
+    if(!i.done)return '❌ 未完成';
+    return i.delayMin>0?`✅ 已完成(${delayText(i)})`:'✅ 已完成';
+  };
+  const rowMain=i=>`| ${catLabel(i.cat)} | ${i.prio} | ${cell(i)}${i.due?' (预期 '+i.due+')':''}${tInfo(i)} | ${statusMain(i)} |`;
+  const rowSide=i=>`| ${catLabel(i.cat)} | ${i.prio} | ${cell(i)}${i.due?' (预期 '+i.due+')':''} |`;
+  return `# 每日工作记录 — ${date}(${wk})
+> 生成于「行间 · Between Lines」
+
+## 今日计划(完成状态仅统计本区)
+| 分类 | 优先级 | 事项 | 状态 |
+|------|--------|------|------|
+${main.map(rowMain).join('\n')||'| — | — | (无计划) | — |'}
+
+**计划完成率:${done}/${main.length}(${pct}%)**${buff?`  \n**今日状态:${buff}**`:''}${mood&&String(mood).trim()?`  \n**心情/提醒:${String(mood).trim().replace(/\r?\n/g,' / ')}**`:''}
+
+## 待办列表(任务记录,不作完成判定)
+| 分类 | 优先级 | 事项 |
+|------|--------|------|
+${side.map(rowSide).join('\n')||'| — | — | (无记录) |'}
+
+## 今日总结
+${summary&&summary.trim()?summary.trim():'(未填写)'}
+
+---
+*本文件由「行间」自动生成备份*`;
+}
+function archiveObj(date){
+  return {date, main:S.main.map(i=>({...i})), side:S.side.map(i=>({...i})), summary:S.summary, buff:S.buff, mood:S.mood||''};
+}
+
+/* ================= 归档抽屉 ================= */
+const drawer=document.getElementById('drawer'), veil=document.getElementById('veil');
+function openDrawer(){renderDrawer(); drawer.classList.add('open'); veil.classList.add('show')}
+function closeDrawer(){drawer.classList.remove('open'); veil.classList.remove('show')}
+document.getElementById('btnDrawer').addEventListener('click',openDrawer);
+document.getElementById('btnDrawerX').addEventListener('click',closeDrawer);
+veil.addEventListener('click',closeDrawer);
+
+function renderDrawer(){
+  const body=document.getElementById('drawerBody');
+  if(!S.archives.length){body.innerHTML='<div class="arc-empty">— 尚无归档 · 每日结算后自动生成 —</div>';return}
+  body.innerHTML=S.archives.slice().reverse().map((a,idx)=>{
+    const ri=S.archives.length-1-idx;
+    const am=a.main||a.items||[], as=a.side||[];   // 兼容旧归档:items 全部视为当日计划
+    const done=am.filter(i=>i.done).length, pct=am.length?Math.round(done/am.length*100):0;
+    const wk='星期'+WK[new Date(a.date+'T12:00:00').getDay()];
+    const rowMain=i=>`<tr><td>${catLabel(i.cat)}</td><td>${i.prio}</td><td class="t">${esc(i.text)}${i.body?`<div class="qbody" style="margin-top:3px">${esc(i.body)}</div>`:''}${i.note?`<div class="qbody" style="margin-top:3px;color:var(--gold)">📝 ${esc(i.note)}</div>`:''}${i.time?` <span style="color:var(--gold)">(预计 ${i.time})</span>`:''}${i.done&&i.doneAt?` <span style="color:var(--mut)">(完成于 ${i.doneAt})</span>`:''}${i.due?` <span style="color:var(--dim)">(${i.due.slice(5)}截止)</span>`:''}${i.from?'<span class="carry">顺延</span>':''}${i.done&&i.delayMin>0?` <span class="delay">延迟 ${fmtDelay(i.delayMin)}</span>`:''}</td><td>${i.done?(i.delayMin>0?`<span class="ok">✓ 完成</span> <span class="delay">延迟${fmtDelay(i.delayMin)}</span>`:'<span class="ok">✓ 完成</span>'):'<span class="no">✗ 未完</span>'}</td></tr>`;
+    const rowSide=i=>`<tr><td>${catLabel(i.cat)}</td><td>${i.prio}</td><td class="t">${esc(i.text)}${i.body?`<div class="qbody" style="margin-top:3px">${esc(i.body)}</div>`:''}${i.note?`<div class="qbody" style="margin-top:3px;color:var(--gold)">📝 ${esc(i.note)}</div>`:''}${i.due?` <span style="color:var(--dim)">(${i.due.slice(5)}预期)</span>`:''}</td><td><span class="rec">记录</span></td></tr>`;
+    return `<div class="arc" data-i="${ri}">
+      <div class="arc-head">
+        <span class="d">${a.date}</span><span class="w">${wk}</span>
+        ${a.buff?`<span class="w">${esc(a.buff)}</span>`:''}
+        <span class="pct">计划完成 ${done}/${am.length} · ${pct}%</span>
+        <span class="ops">
+          <button class="mini" data-op="view">MD 视图</button>
+          <button class="mini" data-op="copy">复制 MD</button>
+          <button class="mini" data-op="dl">下载</button>
+          <button class="mini danger" data-op="del">删除</button>
+        </span>
+      </div>
+      <table>
+        <tr><th>分类</th><th>级</th><th>事项</th><th>状态</th></tr>
+        ${am.map(rowMain).join('')||'<tr><td colspan="4">(当日无计划)</td></tr>'}
+        ${as.length?`<tr><td colspan="4" class="grp">▾ 待办列表 · 仅存档记录,不作完成判定</td></tr>${as.map(rowSide).join('')}`:''}
+      </table>
+      <div class="arc-sum">${esc(a.summary&&a.summary.trim()?a.summary.trim():'(未填写总结)')}</div>
+      <div class="mdview"><pre>${esc(mdFor(a.date,am,as,a.summary,a.buff,a.mood))}</pre></div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('drawerBody').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-op]'); if(!btn)return;
+  const arc=btn.closest('.arc'), a=S.archives[+arc.dataset.i]; if(!a)return;
+  const md=mdFor(a.date,a.main||a.items||[],a.side||[],a.summary,a.buff,a.mood);
+  if(btn.dataset.op==='view'){arc.classList.toggle('mdmode');btn.textContent=arc.classList.contains('mdmode')?'表格视图':'MD 视图'}
+  else if(btn.dataset.op==='copy'){copyText(md,'已复制 '+a.date+' 的 Markdown')}
+  else if(btn.dataset.op==='dl'){saveMD(a.date+'.md',md)}
+  else if(btn.dataset.op==='del'){
+    if(!confirm('确定删除 '+a.date+' 的归档备份?此操作不可恢复。'))return;
+    const d=a.date;
+    S.archives.splice(+arc.dataset.i,1);
+    if(S.lastArchived===d&&!S.archives.some(x=>x.date===d)) S.lastArchived='';
+    save(); renderDrawer(); toast('归档已删除');
+  }
+});
+
+/* ================= 结算 / 跨天归档 ================= */
+let pendingMd='';
+function isDateArchived(date){
+  if(!date)return false;
+  if(S.lastArchived===date)return true;
+  return (S.archives||[]).some(a=>a.date===date);
+}
+/* 换日滚动:主线未完成顺延 + 今日到期待办升入,不写归档 */
+function rollToToday(prevDate){
+  const carry=S.main.filter(i=>!i.done).map(i=>({...i,from:prevDate.slice(5)}));
+  const dueOf=i=>String(i.due||'').slice(0,10);
+  const t=todayStr();
+  const dueToday=S.side.filter(i=>!i.done&&dueOf(i)===t).map(i=>({...i, due:'', from:null}));
+  S.side=S.side.filter(i=>!i.done&&dueOf(i)!==t).concat(carry);
+  S.main=dueToday;
+  const gap=Math.round((new Date(t)-new Date(prevDate))/DAY_MS);
+  S.streak=gap===1?S.streak+1:gap===0?S.streak:1;
+  S.date=t; S.summary=''; S.mood=''; S.buff=''; S.summaryReminded='';
+  save();
+  sumEl.value=''; document.getElementById('wcnt').textContent='0 字';
+  paintMood();
+  render();
+  return {carry, dueToday, t};
+}
+function settle(manual){
+  const prevDate=S.date;
+  const t=todayStr();
+  /* 该日已归档过:跨天只换日,不再生成重复/空归档;并用有效归档回写 MD(修复曾被空数据覆盖的文件) */
+  if(isDateArchived(prevDate)){
+    if(prevDate===t){
+      if(manual) toast('本日已结算归档,无需重复操作');
+      return;
+    }
+    const best=bestArchiveFor(prevDate);
+    if(best) saveMD(prevDate+'.md', mdFromArchive(best), {interactive:false, quiet:true}).then(()=>archivePastMonthMds());
+    else archivePastMonthMds();
+    const {dueToday}=rollToToday(prevDate);
+    if(manual) toast('⚔ 已开启新的一天(该日此前已归档)');
+    else toast('☀ 新的一天(昨日此前已归档,跳过重复归档)');
+    if(dueToday.length) setTimeout(()=>toast('📅 已将 '+dueToday.length+' 条今日到期待办升入今日计划'),700);
+    return;
+  }
+  const arch=archiveObj(prevDate);
+  const done=arch.main.filter(i=>i.done).length;
+  const pct=arch.main.length?Math.round(done/arch.main.length*100):0;
+  pendingMd=mdFor(prevDate,arch.main,arch.side,arch.summary,arch.buff,arch.mood);
+  /* 若同日已有更空的残留归档则替换,避免重复 */
+  const existIdx=(S.archives||[]).findIndex(a=>a.date===prevDate);
+  if(existIdx>=0){
+    if(archiveScore(arch)>=archiveScore(S.archives[existIdx])) S.archives[existIdx]=arch;
+  }else S.archives.push(arch);
+  S.lastArchived=prevDate;
+  const {carry, dueToday}=rollToToday(prevDate);
+  /* 弹窗展示昨日战报 */
+  const statRows=[['当日计划',arch.main.length],['已完成',done],['计划完成率',pct+'%'],['顺延待办',carry.length]];
+  if(arch.side.length)statRows.push(['待办记录',arch.side.length]);
+  if(dueToday.length)statRows.push(['今日到期 ↑',dueToday.length]);
+  document.getElementById('mstats').innerHTML=statRows
+  .map(([k,v])=>`<div class="mstat"><b>${v}</b><span>${k}</span></div>`).join('');
+  document.getElementById('mpre').textContent=pendingMd;
+  document.getElementById('modal').classList.add('show');
+  saveMD(prevDate+'.md',pendingMd,{interactive:false}).then(()=>archivePastMonthMds());
+  toast(manual?'⚔ 结算完成,昨日已归档':'☀ 新的一天,昨日已自动归档');
+  if(dueToday.length) setTimeout(()=>toast('📅 已将 '+dueToday.length+' 条今日到期待办升入今日计划'),700);
+}
+document.getElementById('btnSettle').addEventListener('click',()=>{
+  if(isDateArchived(S.date)&&S.date===todayStr()){
+    toast('本日已结算归档,无需重复操作'); return;
+  }
+  if(!confirm('将「'+S.date+'」内容归档为 MD/表格备份,未完成主线顺延至待办列表,并开启新的一天。继续?'))return;
+  settle(true);
+});
+document.getElementById('btnStartDay').addEventListener('click',()=>document.getElementById('modal').classList.remove('show'));
+document.getElementById('btnCopyMd').addEventListener('click',()=>copyText(pendingMd,'已复制昨日 Markdown'));
+document.getElementById('btnDlMd').addEventListener('click',()=>{saveMD(S.archives[S.archives.length-1].date+'.md',pendingMd)});
+
+/* 打开页面时若已跨天 → 自动归档昨日;页面常开过午夜也自动结算 */
+(async function autoRollover(){
+  try{
+    const restored=await tryRestoreFromDiskBackup();
+    if(restored) toast('📁 已从任务记录自动备份恢复数据');
+    if(S.date!==todayStr()) setTimeout(()=>settle(false),600);
+    else if(IS_NEW||restored) save();
+    const sum=document.getElementById('summaryText');
+    if(sum){
+      sum.value=S.summary||'';
+      const w=document.getElementById('wcnt'); if(w) w.textContent=(sum.value.length||0)+' 字';
+    }
+    if(typeof paintMood==='function') paintMood();
+    if(typeof paintBuffs==='function') paintBuffs();
+    render();
+    if(!await getRecordsDir(false) && !localStorage.getItem('recordsBindRemind.v3')){
+      localStorage.setItem('recordsBindRemind.v3','1');
+      toast('请点「绑定目录」，先选任务记录，再选归档');
+    }
+    setTimeout(async()=>{ try{ await repairArchiveMdFiles(); await archivePastMonthMds(); }catch(e){} },1200);
+    setTimeout(()=>writeStateBackup(false),1500);
+  }catch(e){
+    console.error(e);
+    try{render()}catch(e2){}
+  }
+})();
+let lastDaySeen=todayStr();
+setInterval(()=>{
+  const t=todayStr();
+  if(t===lastDaySeen)return;
+  lastDaySeen=t;
+  if(S.date!==t) settle(false);
+},30000);
+
+/* ================= 今日 MD(未结算时也能导出当天) ================= */
+document.getElementById('btnCopyToday').addEventListener('click',()=>{
+  copyText(mdFor(todayStr(),S.main,S.side,S.summary,S.buff,S.mood),'已复制今日 Markdown');
+});
+document.getElementById('btnDlToday').addEventListener('click',()=>{
+  saveMD(todayStr()+'.md',mdFor(todayStr(),S.main,S.side,S.summary,S.buff,S.mood));
+});
+
+/* ================= 工具:复制 / 下载 / toast / XP浮字 / 火星 ================= */
+function copyText(t,msg){
+  const done=()=>toast('⧉ '+msg);
+  if(navigator.clipboard?.writeText){navigator.clipboard.writeText(t).then(done).catch(()=>fallback())}else fallback();
+  function fallback(){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(e){toast('复制失败,请手动选择')}ta.remove()}
+}
+function download(name,text){   // 兜底:浏览器默认下载
+  const b=new Blob(['﻿'+text],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),800);
+}
+/* ---- 每日 Markdown 写入已绑定的「任务记录」；较早月份可归档。 ---- */
+async function saveMD(name,text,opts){
+  const interactive=!(opts&&opts.interactive===false);
+  const quiet=!!(opts&&opts.quiet);
+  const dir=await getRecordsDir(interactive);
+  if(dir){
+    try{
+      const f=await dir.getFileHandle(name,{create:true});
+      const w=await f.createWritable(); await w.write('\uFEFF'+text); await w.close();
+      if(!quiet) toast('📁 已保存到 任务记录 / '+name);
+      return true;
+    }catch(e){
+      if(interactive){download(name,text); toast('写入文件夹失败,已改用浏览器下载');}
+      return false;
+    }
+  }
+  if(interactive){
+    download(name,text);
+    toast(window.showDirectoryPicker?'请先点「绑定目录」选择 '+RECORDS_DIR_HINT:'⬇ 当前浏览器不支持文件夹直写,已下载到默认位置');
+  }else if(!quiet){
+    toast('📁 未绑定任务记录，'+name+' 未写入');
+  }
+  return false;
+}
+document.getElementById('btnBindDir').addEventListener('click',()=>taskDirectoryBindings.open());
+/* 只回写本月 MD,避免已归档月份被重新写回任务记录 */
+async function repairArchiveMdFiles(){
+  const dir=await getRecordsDir(false);
+  if(!dir||!S.archives||!S.archives.length)return;
+  const cur=todayStr().slice(0,7);
+  const dates=[...new Set(S.archives.map(a=>a.date))].filter(d=>d&&d.slice(0,7)===cur);
+  let n=0;
+  for(const d of dates){
+    const best=bestArchiveFor(d); if(!best)continue;
+    try{
+      const f=await dir.getFileHandle(d+'.md',{create:true});
+      const w=await f.createWritable();
+      await w.write('﻿'+mdFromArchive(best));
+      await w.close();
+      n++;
+    }catch(e){}
+  }
+  if(n) toast(`📁 已按归档回写本月 ${n} 份任务记录 MD`);
+}
+/* 将过去月份的记录归入 归档/年/年-月/01_工作日志。 */
+async function archivePastMonthMds(){
+  const dir=await getRecordsDir(false);
+  if(!dir)return;
+  const cur=todayStr().slice(0,7);
+  const names=[];
+  try{
+    for await (const [name,h] of dir.entries()){
+      if(!h||h.kind!=='file')continue;
+      const m=String(name).match(/^(\d{4}-\d{2})-\d{2}\.md$/);
+      if(!m)continue;
+      if(m[1]>=cur)continue;
+      names.push(name);
+    }
+  }catch(e){return}
+  if(!names.length)return;
+  const arch=await getArchiveDir(false);
+  if(!arch){
+    if(localStorage.getItem('archiveBindRemind')!==cur){
+      localStorage.setItem('archiveBindRemind',cur);
+      toast('📁 上月记录仍在任务记录。请点「绑定目录」并选择归档文件夹');
+    }
+    return;
+  }
+  let n=0;
+  for(const name of names){
+    const ym=name.slice(0,7);
+    const year=ym.slice(0,4);
+    try{
+      const src=await dir.getFileHandle(name);
+      const file=await src.getFile();
+      const yearDir=await arch.getDirectoryHandle(year,{create:true});
+      const monthDir=await yearDir.getDirectoryHandle(ym,{create:true});
+      const logDir=await monthDir.getDirectoryHandle('01_工作日志',{create:true});
+      const dest=await logDir.getFileHandle(name,{create:true});
+      const w=await dest.createWritable();
+      await w.write(file);
+      await w.close();
+      await dir.removeEntry(name);
+      n++;
+    }catch(e){}
+  }
+  if(n) toast('📁 已将 '+n+' 份上月记录归入归档');
+}
+function toast(msg){
+  const box=document.getElementById('toastbox'),t=document.createElement('div');
+  t.className='toast';t.textContent=msg;box.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+function xpFloat(x,y,txt){
+  const f=document.createElement('div');f.className='xpfloat';f.textContent=txt;
+  f.style.left=(x-20)+'px';f.style.top=(y-10)+'px';document.body.appendChild(f);
+  setTimeout(()=>f.remove(),950);
+}
+/* 背景漂浮火星 */
+(function embers(){
+  const layer=document.getElementById('emberLayer'),colors=['#f5c354','#52cdb6','#b28df0'];
+  for(let i=0;i<26;i++){
+    const s=document.createElement('span');s.className='ember';
+    const sz=2+Math.random()*3;
+    s.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[i%3]};
+      --o:${.25+Math.random()*.4};animation-duration:${9+Math.random()*14}s;animation-delay:-${Math.random()*20}s;
+      box-shadow:0 0 ${4+sz*2}px ${colors[i%3]}`;
+    layer.appendChild(s);
+  }
+})();
+</script>
+<script src="assets/hero-title.js"></script>
+<script src="assets/workspace.js"></script>
+<dialog id="bannerPicker" class="banner-picker" aria-labelledby="bannerTitle">
+  <header class="banner-picker-head"><div><h2 id="bannerTitle">选择 Banner</h2><span class="banner-location" id="bannerLocation"></span></div><button type="button" id="bannerClose" aria-label="关闭选图">×</button></header>
+  <div class="banner-picker-toolbar"><button type="button" id="bannerFolder">选择目录</button><button type="button" id="bannerRefresh">刷新目录</button><button type="button" id="bannerBuiltins">内置图片</button><button type="button" id="bannerUpload">上传图片</button><input id="bannerFolderInput" type="file" webkitdirectory multiple hidden></div>
+  <div class="banner-grid" id="bannerGrid" aria-label="Banner 图片列表"></div>
+  <p class="banner-message" id="bannerMessage" role="status" aria-live="polite"></p>
+</dialog>
+<script src="assets/banner-catalog.js"></script>
+<script src="assets/header-artwork.js"></script>
+<script src="assets/banner-library.js"></script>
+<script src="assets/focus-core.js"></script>
+<script src="assets/focus.js"></script>
+<script src="assets/library-core.js"></script>
+<script src="assets/library-obsidian.js"></script>
+<script src="assets/library.js"></script>
+<script src="assets/notes-core.js"></script>
+<script src="assets/notes.js"></script>
+<script src="assets/focus-ambience.js"></script>
+<script src="assets/focus-dream.js"></script>
+</body>
+</html>

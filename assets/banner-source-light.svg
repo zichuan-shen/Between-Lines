@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560" fill="none">
+  <defs>
+    <linearGradient id="paper" x1="440" y1="90" x2="1410" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f5f4f0"/><stop offset=".62" stop-color="#ecece6"/><stop offset="1" stop-color="#e3e7e0"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="686" y1="5" x2="1060" y2="549" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/><stop offset="1" stop-color="#dbe0d9"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="390" y1="438" x2="1190" y2="91" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#89998d" stop-opacity="0"/><stop offset=".75" stop-color="#89998d" stop-opacity=".55"/><stop offset="1" stop-color="#89998d" stop-opacity=".12"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#paper)" d="M0 0h1400v560H0z"/>
+  <circle cx="1051" cy="153" r="109" fill="#fff" fill-opacity=".78"/>
+  <path d="M289 560c279-67 350-387 614-387 202 0 233 164 497 137v250H289Z" fill="url(#fold)"/>
+  <path d="M375 560c223-29 357-346 528-346 201 0 218 175 497 144v202H375Z" fill="#f9f9f6" fill-opacity=".72"/>
+  <path d="M326 560c228-52 357-373 577-373 189 0 229 169 497 142M396 560c224-52 350-341 507-341 195 0 222 174 497 143M468 560c164-27 294-309 435-309 191 0 214 183 497 147" stroke="url(#edge)" stroke-width="1.5"/>
+  <circle cx="828" cy="113" r="4" fill="#8d9e91" fill-opacity=".45"/>
+  <circle cx="112" cy="407" r="2" fill="#9aa69b" fill-opacity=".3"/><circle cx="1260" cy="224" r="3" fill="#fff"/>
+</svg>

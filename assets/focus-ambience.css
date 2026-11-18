@@ -1,0 +1,70 @@
+/* Sidereal / focus room. Edge-lit galactic dust around a quiet clock. */
+.focus-heading-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.focus-console{--dream-ink:#d6dfed;min-height:660px;padding:25px 32px 30px;background:#060c19;border-color:#304056;border-radius:22px;box-shadow:0 18px 60px #02051066,inset 0 1px 0 #cce9ff09}
+.focus-console>.focus-atmosphere{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:1;transition:opacity 1.8s ease}
+.focus-console>:not(.focus-atmosphere){position:relative;z-index:1}
+.focus-dream-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.focus-view[data-state="running"] .focus-atmosphere{opacity:1}
+.focus-view[data-state="paused"] .focus-atmosphere{opacity:.85}
+.focus-view[data-state="review"] .focus-atmosphere{opacity:.65}
+.focus-console-top{font-size:9px;letter-spacing:.12em;color:#a0b5cc}
+.focus-console-top b{color:#b2dbe6}.focus-console-top .focus-led{width:5px;height:5px}
+.focus-target{max-width:530px;font-size:17px;font-weight:400;line-height:1.85;margin:29px auto 0;letter-spacing:.03em;color:var(--dream-ink)}
+.focus-dial{width:min(390px,84%);margin:28px auto 30px;isolation:isolate}
+.focus-dial::before{content:none}
+.focus-dial::after{content:none}
+.focus-dial svg{position:relative;z-index:1;opacity:.8}
+.focus-track{stroke:#c3d9dd22;stroke-width:.6}
+.focus-progress{stroke:#b4c9e2;stroke-width:.85;filter:drop-shadow(0 0 4px #b9d2ff25)}
+.focus-dial .focus-clock{position:absolute;z-index:2;inset:0;gap:19px;pointer-events:none}
+#focusClock{font:300 clamp(56px,6vw,88px)/1.05 'Segoe UI',var(--body);letter-spacing:-3px;color:#edf5fa;text-shadow:none}
+#focusClockHint{font-size:11px;letter-spacing:.09em;color:#b0c6d5}
+.focus-controls{gap:12px}.focus-controls .hbtn{min-width:135px;border-radius:30px;min-height:42px;padding:11px 24px}
+html[data-theme="dark"] .focus-controls .hbtn.primary{background:#d6e1f2;border-color:#e5edf8;color:#243348;box-shadow:0 4px 30px #a3c3ff17}
+html[data-theme="dark"] .focus-controls .hbtn.primary:hover{background:#e9eff8;box-shadow:0 4px 35px #a3c3ff26}
+html[data-theme="dark"] .focus-controls .hbtn:not(.primary){background:#122035a8;color:#cbd7e9;border-color:#4b607c}
+.focus-session-caption{display:flex;align-items:center;justify-content:center;gap:12px;margin:22px auto 0;color:#8fa7be;font:8px var(--mono);letter-spacing:.21em;pointer-events:none}
+.focus-session-caption i{width:28px;height:1px;background:linear-gradient(90deg,transparent,#92bfd859)}
+.focus-session-caption i:last-child{transform:rotate(180deg)}
+.focus-footnote{font-size:10px;line-height:1.9;color:#8fa7be;margin-top:16px;max-width:420px}
+.focus-settings{border-radius:16px;background:#142136;border-color:#2e435f}
+.focus-view:fullscreen{background:#0c1424}.focus-view:fullscreen .focus-heading{max-width:1250px;margin-left:auto;margin-right:auto}
+.focus-view:fullscreen .focus-console{min-height:calc(100dvh - 175px)}
+.focus-view:fullscreen .focus-dial{width:min(420px,65dvh)}
+/* Daylight counterpart: a quiet sage astronomical print. */
+html[data-theme="light"] .focus-console{--dream-ink:#3e5546;background:#e8e9e1;border-color:#c7d1bd;box-shadow:0 15px 45px #4b614915,inset 0 1px 0 #fff7}
+html[data-theme="light"] .focus-track{stroke:#607d6c2a}
+html[data-theme="light"] .focus-progress{stroke:#6f8c67;filter:none}
+html[data-theme="light"] #focusClock{color:#3d5747}
+html[data-theme="light"] :is(#focusClockHint,.focus-console-top,.focus-console-top b){color:#637c68}
+html[data-theme="light"] :is(.focus-session-caption,.focus-footnote){color:#6f806b}
+html[data-theme="light"] .focus-session-caption i{background:linear-gradient(90deg,transparent,#829c7380)}
+html[data-theme="light"] .focus-settings{background:#f3f1e7;border-color:#d5d8c9}
+html[data-theme="light"] .focus-view:fullscreen{background:var(--bg0)}
+@media(max-width:1200px){.focus-console{padding:24px 22px}.focus-dial{width:min(350px,90%)}}
+@media(max-width:760px){.focus-console{min-height:580px;padding:20px 16px 26px;border-radius:18px}.focus-heading-actions{gap:5px}.focus-heading-actions .ghost{font-size:10px;padding:7px 8px}.focus-heading{align-items:flex-start}.focus-target{font-size:15px;margin-top:24px}.focus-dial{width:min(310px,90%);margin:26px auto}#focusClock{font-size:68px}#focusClockHint{font-size:10px;letter-spacing:.03em}.focus-session-caption{font-size:7px}.focus-controls .hbtn{min-width:110px;padding:10px 18px}.focus-view:fullscreen .focus-dial{width:min(310px,65vw)}.focus-view:fullscreen .focus-console{min-height:560px}}
+@media(prefers-reduced-motion:reduce){.focus-console>.focus-atmosphere{transition:none}}
+
+/* Fullscreen is a single immersive surface, not a centered two-column dashboard. */
+.focus-view:fullscreen{padding:0;width:100vw;height:100dvh;min-height:0;overflow:hidden;position:relative}
+.focus-view:fullscreen .focus-heading{position:absolute;inset:24px 30px auto auto;max-width:none;margin:0;z-index:6}
+.focus-view:fullscreen .focus-heading>div:first-child{display:none}
+.focus-view:fullscreen .focus-heading-actions{gap:8px}
+.focus-view:fullscreen .focus-layout{display:block;width:100%;height:100%;max-width:none;margin:0}
+.focus-view:fullscreen :is(.focus-settings,.focus-history-section,.focus-console-top,.focus-footnote,.focus-session-caption){display:none}
+.focus-view:fullscreen .focus-console{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;min-height:0;padding:76px 28px 44px;border:0;border-radius:0;box-shadow:none;overflow:hidden}
+.focus-view:fullscreen .focus-target{flex:none;font-size:clamp(16px,1.4vw,22px);line-height:1.6;margin:0 auto 12px;max-width:min(700px,85vw)}
+.focus-view:fullscreen .focus-dial{flex:none;width:min(600px,64dvh,76vw);margin:10px auto 24px}
+.focus-view:fullscreen #focusClock{font-size:clamp(70px,10.8dvh,132px);letter-spacing:-4px}
+.focus-view:fullscreen #focusClockHint{font-size:12px}
+.focus-view:fullscreen .focus-controls{flex:none}
+.focus-view:fullscreen .focus-controls .hbtn{font-size:13px;min-height:42px}
+.focus-view:fullscreen #focusMessage{position:absolute;z-index:5;bottom:10px;left:50%;transform:translateX(-50%);width:min(680px,85%);margin:0;text-align:center;font-size:11px;line-height:1.7}
+.focus-view:fullscreen[data-state="review"] .focus-console{justify-content:flex-start;overflow-y:auto;padding-top:75px;padding-bottom:60px}
+.focus-view:fullscreen[data-state="review"] .focus-dial{width:min(330px,32dvh,65vw);margin:10px auto}
+.focus-view:fullscreen[data-state="review"] #focusClock{font-size:clamp(50px,7dvh,80px)}
+.focus-view:fullscreen .focus-review{flex:none;width:min(560px,95%);margin:16px auto 0;padding-top:16px}
+.focus-view:fullscreen .focus-review h2{font-size:16px}
+.focus-view:fullscreen .focus-review textarea{max-height:180px}
+@media(max-height:650px){.focus-view:fullscreen .focus-console{padding-top:58px;padding-bottom:30px}.focus-view:fullscreen .focus-target{margin-bottom:4px}.focus-view:fullscreen .focus-dial{width:min(480px,61dvh,70vw);margin:4px auto 14px}.focus-view:fullscreen .focus-heading{inset:12px 18px auto auto}.focus-view:fullscreen #focusClock{font-size:clamp(45px,10dvh,85px)}.focus-view:fullscreen #focusClockHint{font-size:10px}}
+@media(max-width:760px){.focus-view:fullscreen .focus-heading{right:16px;top:16px}.focus-view:fullscreen .focus-console{padding-left:16px;padding-right:16px}.focus-view:fullscreen .focus-dial{width:min(500px,59dvh,80vw)}.focus-view:fullscreen #focusClock{font-size:clamp(55px,16vw,95px)}}
