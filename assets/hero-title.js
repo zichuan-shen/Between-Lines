@@ -3,18 +3,30 @@
   'use strict';
   const KEY = 'gpdQuestLog.headline.v1';
   const LAST = 'gpdQuestLog.headline.last';
-  const phrases = [
-    ['来都来了，', '先做一件。'],
-    ['别急，', '脑子还在加载。'],
-    ['问题不大，', '先看一眼需求。'],
-    ['先把事情列出来，', '看看从哪开始。'],
+  // Both themes share slots 1–6. The themed arrays fill slots 7–10 in the same order.
+  const shared = [
+    ['One tab.', 'One task.'],
     ['先存个档，', '再往下想。'],
-    ['从从容容，', '先开一个文档。'],
-    ['先做个初版，', '文件名以后再改。'],
-    ['Where was I?', '刚才做到哪了？'],
-    ['One thing first.', '其他的，待会儿。'],
-    ['One tab.', 'One task.']
+    ['Next time is next time.', 'Now is now.'],
+    ['The Poetry', 'of Place'],
+    ['江流天地外，', '山色有无中。'],
+    ['半壕春水一城花，', '烟雨暗千家。']
   ];
+  const themed = {
+    light: [
+      ['天与云、与山、与水，', '上下一白。'],
+      ['春水碧于天，', '画船听雨眠。'],
+      ['A thing of beauty', 'is a joy for ever'],
+      ['A light', 'exists in spring']
+    ],
+    dark: [
+      ['The World', 'Deserves Witnesses'],
+      ['Real Life is color', 'you can’t control.'],
+      ['This is the story', 'of a lifetime'],
+      ['The desire of the moth', 'for the star']
+    ]
+  };
+  const root = document.documentElement;
   const title = document.getElementById('heroTitle');
   const form = document.getElementById('headlineForm');
   const edit = document.getElementById('headlineEdit');
@@ -24,6 +36,7 @@
   const clean = value => Array.from(String(value || '').trim()).slice(0, 16).join('');
   let custom = null;
   let current;
+  let headlineNumber;
   try {
     const saved = JSON.parse(localStorage.getItem(KEY));
     if (Array.isArray(saved) && saved.length === 2 && saved.every(v => typeof v === 'string')) {
@@ -32,13 +45,20 @@
     }
   } catch (_) { /* Missing or invalid preferences use a random headline. */ }
 
-  function randomPhrase() {
+  function pickHeadlineNumber() {
     let previous = -1;
     try { previous = Number(localStorage.getItem(LAST) ?? -1); } catch (_) {}
-    const options = phrases.map((_, i) => i).filter(i => i !== previous);
-    const index = options[Math.floor(Math.random() * options.length)];
-    try { localStorage.setItem(LAST, String(index)); } catch (_) {}
-    return phrases[index].slice();
+    const count = shared.length + themed.dark.length;
+    const options = Array.from({length: count}, (_, index) => index + 1).filter(number => number !== previous);
+    headlineNumber = options[Math.floor(Math.random() * options.length)];
+    try { localStorage.setItem(LAST, String(headlineNumber)); } catch (_) {}
+  }
+  function paintBuiltIn() {
+    const theme = root.dataset.theme === 'light' ? 'light' : 'dark';
+    const index = headlineNumber - 1;
+    const lines = shared[index] || themed[theme][index - shared.length];
+    if (current !== lines) paint(lines);
+    else fitTitle();
   }
   function paint(lines) {
     current = lines;
@@ -81,7 +101,11 @@
       return;
     }
     custom = lines;
-    paint(custom || randomPhrase());
+    if (custom) paint(custom);
+    else {
+      pickHeadlineNumber();
+      paintBuiltIn();
+    }
     closeEditor();
     status.textContent = custom ? '自定义标题已保存' : '已恢复随机标题，每次打开页面会换一句';
   }
@@ -110,7 +134,11 @@
   });
   document.getElementById('headlineCancel').addEventListener('click', closeEditor);
   document.getElementById('headlineReset').addEventListener('click', () => persist(null));
-  paint(custom || randomPhrase());
+  if (custom) paint(custom);
+  else {
+    pickHeadlineNumber();
+    paintBuiltIn();
+  }
   if (globalThis.ResizeObserver) {
     let lastWidth;
     new ResizeObserver(([entry]) => {
@@ -120,7 +148,10 @@
     }).observe(title.parentElement);
   }
   if (globalThis.MutationObserver) {
-    new MutationObserver(fitTitle).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+    new MutationObserver(() => {
+      if (custom) fitTitle();
+      else paintBuiltIn();
+    }).observe(root, {attributes:true, attributeFilter:['data-theme']});
   }
   document.fonts?.ready.then(fitTitle);
 })();

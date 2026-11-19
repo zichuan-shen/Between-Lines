@@ -5,7 +5,7 @@ const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../assets/hero-title.js'), 'utf8');
 const KEY = 'gpdQuestLog.headline.v1';
 const LAST = 'gpdQuestLog.headline.last';
-function boot(store = new Map(), fail = false) {
+function boot(store = new Map(), fail = false, theme = 'dark', random = 0) {
   class Element {
     constructor() { this.hidden = false; this.value = ''; this.textContent = ''; this.children = []; this.events = {}; this.attrs = {}; this.classes = new Set(); this.classList = {toggle: (key, on) => on ? this.classes.add(key) : this.classes.delete(key)}; }
     addEventListener(name, cb) { this.events[name] = cb; }
@@ -20,13 +20,43 @@ function boot(store = new Map(), fail = false) {
   const elements = new Map();
   const get = id => { if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); };
   get('headlineForm').hidden = true;
+  const root = {dataset: {theme}};
+  let themeChanged;
   vm.runInNewContext(source, {
-    document: {getElementById: get, createTextNode: text => ({textContent:text}), createElement: () => new Element()},
+    document: {documentElement: root, getElementById: get, createTextNode: text => ({textContent:text}), createElement: () => new Element()},
     localStorage: {getItem: key => store.get(key) ?? null, setItem: (key, value) => {if(fail) throw Error('quota'); store.set(key,value);}, removeItem: key => {if(fail) throw Error('quota'); store.delete(key);}},
-    Math: {random: () => 0, floor: Math.floor}
+    Math: {random: () => random, floor: Math.floor},
+    MutationObserver: class { constructor(callback) { themeChanged = callback; } observe() {} }
   });
-  return {get, store, title: () => get('heroTitle').children.map(x => x.textContent).join('')};
+  return {get, store, title: () => get('heroTitle').children.map(x => x.textContent).join(''), switchTheme: value => { root.dataset.theme = value; themeChanged(); }};
 }
+const light = new Set();
+const dark = new Set();
+for (let number = 1; number <= 10; number++) {
+  const check = boot(new Map(), false, 'light', (number - 0.5) / 10);
+  const lightText = check.title();
+  const lightNodes = check.get('heroTitle').children;
+  assert.equal(check.store.get(LAST), String(number));
+  check.switchTheme('dark');
+  const darkText = check.title();
+  assert.equal(lightText === darkText, number <= 6);
+  if (number <= 6) assert.equal(check.get('heroTitle').children, lightNodes);
+  assert.equal(check.store.get(LAST), String(number));
+  check.switchTheme('light');
+  assert.equal(check.title(), lightText);
+  dark.add(darkText);
+  light.add(lightText);
+}
+assert.equal(light.size, 10);
+assert.equal(dark.size, 10);
+assert.equal(new Set([...light, ...dark]).size, 14);
+const themeEdit = boot(new Map(), false, 'light', .65);
+themeEdit.get('headlineEdit').fire('click');
+themeEdit.get('headlineFirst').value = '正在编辑';
+themeEdit.switchTheme('dark');
+assert.equal(themeEdit.get('headlineFirst').value, '正在编辑');
+themeEdit.get('headlineCancel').fire('click');
+assert.equal(themeEdit.title(), 'The WorldDeserves Witnesses');
 let app = boot();
 assert.ok(app.title());
 const before = app.title();
@@ -36,6 +66,8 @@ assert.equal(app.get('headlineForm').hidden, false);
 app.get('headlineFirst').value = '  自己的节奏  ';
 app.get('headlineSecond').value = '认真生活';
 app.get('headlineForm').fire('submit');
+assert.equal(app.title(), '自己的节奏认真生活');
+app.switchTheme('light');
 assert.equal(app.title(), '自己的节奏认真生活');
 assert.equal(boot(app.store).title(), app.title(), 'Custom text persists on reopening');
 app.get('headlineEdit').fire('click');
@@ -66,4 +98,4 @@ assert.equal(app.get('headlineForm').hidden, false, 'Storage failure keeps edito
 assert.match(app.get('headlineStatus').textContent, /未能保存/);
 app.get('headlineForm').fire('keydown', {key:'Escape'});
 assert.equal(app.get('headlineForm').hidden, true);
-console.log('PASS: random rotation, persistence, cancel, reset, single line, literal text, shortcuts, corrupt storage, storage failure.');
+console.log('PASS: 10 titles per theme, six shared slots, matched theme swaps, random rotation, custom text and draft preservation, persistence, reset, and storage failure.');
