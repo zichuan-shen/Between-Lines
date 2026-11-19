@@ -1,0 +1,30 @@
+# Local records and backups
+/任务记录/
+/归档/
+/项目资料/
+/灵感馆素材库/
+/_行间附件/
+*autosave.json
+*.zip
+*.lnk
+*.bak
+*.backup.*
+
+# Only include explicitly bundled artwork
+/Banner/亮色/*
+!/Banner/亮色/纸间.png
+!/Banner/亮色/白色晴光.jpg
+/Banner/暗色/*
+!/Banner/暗色/夜航.png
+!/Banner/暗色/蓝色夜景.png
+!/Banner/暗色/月下露西.webp
+!/Banner/暗色/霓虹侧影.jpg
+
+# Local settings and credentials
+.env
+.env.*
+.obsidian/
+.vscode/
+node_modules/
+Thumbs.db
+.DS_Store

@@ -43,5 +43,5 @@ html[data-theme="light"] .hero-visual .hud-art.custom-artwork{opacity:.7;filter:
 .artwork-controls :is(#artworkChoose,#artworkReset):disabled{cursor:wait}
 
 /* Bundled theme defaults; custom images continue to use their own centered crop. */
-html[data-theme="dark"] .hero-visual .hud-art:not(.custom-artwork){background-image:url('../Banner/暗色/夜航.png');background-position:center top;background-size:cover}
-html[data-theme="light"] .hero-visual .hud-art:not(.custom-artwork){background-image:url('../Banner/亮色/纸间.png');background-position:center;background-size:cover}
+html[data-theme="dark"] .hero-visual .hud-art:not(.custom-artwork){background-image:url('../Banner/暗色/蓝色夜景.png');background-position:center top;background-size:cover}
+html[data-theme="light"] .hero-visual .hud-art:not(.custom-artwork){background-image:url('../Banner/亮色/白色晴光.jpg');background-position:center;background-size:cover}

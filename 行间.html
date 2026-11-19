@@ -338,8 +338,7 @@ input,textarea,select{font-family:inherit; color:var(--ink)}
 .qcard.late .qtitle:hover{color:#ffcdc2}
 .qcard.done .qtitle{color:var(--dim); text-decoration:line-through; text-decoration-color:rgba(87,207,143,.6); font-weight:500}
 .qbodywrap{grid-area:body; min-width:0}
-.qbody{font-size:11.5px; color:var(--mut); line-height:1.5; margin-top:2px; word-break:break-all;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.qbody{font-size:11.5px; color:var(--mut); line-height:1.5; margin-top:2px; white-space:pre-wrap; overflow-wrap:anywhere}
 .qcard.done .qbody{color:#4c655d}
 .qmeta{grid-area:meta; align-self:start; display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin-top:3px}
 .cat{font-size:9.5px; padding:1px 6px; border-radius:4px; letter-spacing:.08em; background:rgba(255,255,255,.055); color:var(--mut); border:1px solid var(--line)}
@@ -861,6 +860,24 @@ function defaultState(){
   };
 }
 
+function addExampleTasks(state){
+  state.main=[
+    {"id":"example-main-1","text":"M5系统改造","body":"创建的今日任务可以设定时间，若今日未完成则自动今日待办","cat":"req","prio":"P1","due":"","time":"","note":"这里可以进行备注","done":false,"doneAt":"","delayMin":0,"from":null},
+    {"id":"example-main-2","text":"已完成任务示例","body":"已完成任务需手动修改完成状态，每日结束时将会根据今日任务进度输出一份md格式记录","cat":"plan","prio":"P1","due":"","time":"","note":"","done":true,"doneAt":"12:27","delayMin":0,"from":null}
+  ];
+  state.side=[
+    {"id":"example-side-1","text":"PC端操作优化","body":"* 待办列表中的任务若设定待办时间则到日期会自动挪入左侧列表\n*左右两个列表中的条目可以互相拖动","cat":"plan","prio":"P1","due":"","time":"","note":"","done":false,"doneAt":"","delayMin":0,"from":null}
+  ];
+}
+
+function hasOnlyExampleTasks(state){
+  if(state.summary||state.mood||state.buff||state.archives?.length) return false;
+  const example={};
+  addExampleTasks(example);
+  return JSON.stringify(state.main)===JSON.stringify(example.main)
+    && JSON.stringify(state.side)===JSON.stringify(example.side);
+}
+
 function load(){
   try{const raw=localStorage.getItem(KEY); if(raw){const s=JSON.parse(raw); if(s&&s.date) return s;}}catch(e){}
   return null;
@@ -901,7 +918,10 @@ async function tryRestoreFromDiskBackup(){
       }catch(e2){return false}
     }
     const disk=JSON.parse(await file.text());
-    if(stateScore(disk)<=stateScore(S)) return false;
+    const diskScore=stateScore(disk);
+    if(diskScore<0) return false;
+    const canReplaceExamples=hasOnlyExampleTasks(S)||(IS_NEW&&!load());
+    if(!canReplaceExamples && diskScore<=stateScore(S)) return false;
     S=disk;
     try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
     return true;
@@ -1702,6 +1722,7 @@ document.getElementById('btnDlMd').addEventListener('click',()=>{saveMD(S.archiv
   try{
     const restored=await tryRestoreFromDiskBackup();
     if(restored) toast('📁 已从任务记录自动备份恢复数据');
+    if(IS_NEW&&!restored&&!load()) addExampleTasks(S);
     if(S.date!==todayStr()) setTimeout(()=>settle(false),600);
     else if(IS_NEW||restored) save();
     const sum=document.getElementById('summaryText');
