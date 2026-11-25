@@ -93,7 +93,14 @@
   if(data.session)return;
   try{
    const task=tasks().find(x=>x.id===$('focusTask').value);
-   const session=C.start({id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random().toString(36).slice(2),minutes:Number($('focusMinutes').value),taskId:task?.id||'',title:$('focusIntent').value.trim()||task?.text},Date.now());
+   const title=$('focusIntent').value.trim()||task?.text;
+   if(!title){
+    const hint='请在左侧先选择/填入要做的事';
+    if(typeof toast==='function')toast(hint);
+    else message(hint);
+    return;
+   }
+   const session=C.start({id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random().toString(36).slice(2),minutes:Number($('focusMinutes').value),taskId:task?.id||'',title},Date.now());
    if(commit({...data,session})){message('专注已开始，切换模块也会继续计时。');paint();syncAudio(true);}
   }catch(e){message(e.message);}
  });

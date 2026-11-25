@@ -9,11 +9,16 @@ const task={id:'task1',text:'活动方案',done:false,note:'已有备注'};
 class TestDate extends Date{constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}}
 const window={addEventListener:(key,fn)=>winEvents[key]=fn,dispatchEvent:event=>winEvents[event.type]?.(event),AudioContext:undefined};
 const document={title:'每日任务看板',hidden:false,getElementById:node,querySelectorAll:()=>[],createElement:()=>node('generated'+Math.random()),addEventListener:(k,fn)=>docEvents[k]=fn};
-vm.runInNewContext(source,{FocusCore:Core,Date:TestDate,document,window,Option:class{constructor(text,value){this.text=text;this.value=value;}},localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>{if(storageFails)throw Error('quota');store.set(k,v);}},setInterval:fn=>tick=fn,S:{main:[task]},save:()=>savedTask++,render(){},CustomEvent:class{constructor(type,opts){this.type=type;this.detail=opts.detail;}},Math});
+const toasts=[];
+vm.runInNewContext(source,{FocusCore:Core,Date:TestDate,document,window,Option:class{constructor(text,value){this.text=text;this.value=value;}},localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>{if(storageFails)throw Error('quota');store.set(k,v);}},setInterval:fn=>tick=fn,S:{main:[task]},save:()=>savedTask++,render(){},toast:text=>toasts.push(text),CustomEvent:class{constructor(type,opts){this.type=type;this.detail=opts.detail;}},Math});
 document.exitFullscreen=async()=>{document.fullscreenElement=null;docEvents.fullscreenchange();};
 node('focusView').requestFullscreen=async()=>{document.fullscreenElement=node('focusView');docEvents.fullscreenchange();};
 const click=id=>node(id).events.click();
 assert.equal(node('focusFullscreen').disabled,true,'Fullscreen starts after a session is configured');
+node('focusIntent').value='   ';
+click('focusStart');
+assert.deepEqual(toasts,['请在左侧先选择/填入要做的事']);
+assert.equal(store.has('gpdQuestLog.focus.v1'),false);
 const state=()=>JSON.parse(store.get('gpdQuestLog.focus.v1'));
 node('focusTask').value='task1';node('focusTask').events.change();assert.equal(node('focusIntent').value,'活动方案');
 node('focusMinutes').value='1';click('focusStart');

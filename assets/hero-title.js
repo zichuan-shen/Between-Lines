@@ -8,7 +8,7 @@
     ['One tab.', 'One task.'],
     ['先存个档，', '再往下想。'],
     ['Next time is next time.', 'Now is now.'],
-    ['The Poetry', 'of Place'],
+    ['The Poetry of Place', 'The Art of Belonging'],
     ['江流天地外，', '山色有无中。'],
     ['半壕春水一城花，', '烟雨暗千家。']
   ];
@@ -16,14 +16,14 @@
     light: [
       ['天与云、与山、与水，', '上下一白。'],
       ['春水碧于天，', '画船听雨眠。'],
-      ['A thing of beauty', 'is a joy for ever'],
-      ['A light', 'exists in spring']
+      ['A Thing of Beauty', 'A Joy for Ever'],
+      ['Spring Light', 'Fields of Color']
     ],
     dark: [
       ['The World', 'Deserves Witnesses'],
       ['Real Life is color', 'you can’t control.'],
       ['This is the story', 'of a lifetime'],
-      ['The desire of the moth', 'for the star']
+      ['The Moth and the Star', 'The Night and the Morrow']
     ]
   };
   const root = document.documentElement;

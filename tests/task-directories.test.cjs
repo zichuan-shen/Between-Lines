@@ -1,9 +1,9 @@
 const assert=require('node:assert/strict'),D=require('../assets/task-directories.js');
 const flush=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
-function boot({saved=new Map(),supported=true,failWrite=false}={}){
+function boot({saved=new Map(),supported=true,failWrite=false,paths=new Map()}={}){
  const nodes=new Map(),env={saved,calls:[],gesture:false,selection:null,failWrite,notifications:[],bound:[],backup:false};
  const get=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',hidden:false,disabled:false,open:false,showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);};
- const window={isSecureContext:true};if(supported)window.showDirectoryPicker=opts=>{assert.equal(env.gesture,true,'Native picker must be called in the button gesture, before any asynchronous handle read');env.gesture=false;env.calls.push(opts);if(env.selection instanceof Error)return Promise.reject(env.selection);return Promise.resolve(env.selection);};
+ const window={isSecureContext:true,localStorage:{getItem:key=>paths.get(key),setItem:(key,value)=>paths.set(key,value)}};if(supported)window.showDirectoryPicker=opts=>{assert.equal(env.gesture,true,'Native picker must be called in the button gesture, before any asynchronous handle read');env.gesture=false;env.calls.push(opts);if(env.selection instanceof Error)return Promise.reject(env.selection);return Promise.resolve(env.selection);};
  const api=D.create({document:{getElementById:get},window,readHandle:async key=>{env.gesture=false;return saved.get(key)||null;},writeHandle:async(key,h)=>{if(env.failWrite)throw Error('quota');saved.set(key,h);},notify:t=>env.notifications.push(t),afterBind:async kind=>env.bound.push(kind),backupNow:async()=>env.backup});
  return {...env,env,api,get,click(id){env.gesture=true;return get(id).onclick();}};
 }
@@ -17,6 +17,36 @@ function handle(name,permission='granted',id='a'){return {name,id,permission,req
  const pending=handle('任务记录','prompt');const reload=boot({saved:new Map([['recordsDir.v3',pending]])});assert.equal(await reload.api.get('recordsDir.v3','','任务记录','',true),null);assert.equal(pending.requested,0,'Background/export reads do not initiate native authorization');reload.api.open();await flush();assert.equal(reload.get('recordsDirAuthorize').hidden,false);await reload.click('recordsDirAuthorize');assert.equal(pending.requested,1);assert.equal(reload.get('recordsDirAuthorize').hidden,true);assert.equal(await reload.api.get('recordsDir.v3','','任务记录','',false),pending);
  pending.permission='denied';pending.allow='denied';reload.api.open();await flush();await reload.click('recordsDirAuthorize');assert.match(reload.get('directoryMessage').textContent,/未获得/);assert.equal(await reload.api.get('recordsDir.v3','','任务记录','',false),null);
  const temporary=boot({failWrite:true});temporary.env.selection=handle('任务记录');await temporary.click('recordsDirChoose');assert.match(temporary.get('recordsDirStatus').textContent,/本次/);assert.equal(temporary.env.saved.size,0);assert.equal((await temporary.api.get('recordsDir.v3','','任务记录','',false)).name,'任务记录','A persistence failure retains the current live handle without claiming it survives reload');
+ const completion=boot({saved:new Map([['recordsDir.v3',old]])});
+ completion.api.open();await flush();
+ const replacement=handle('任务记录','prompt','replacement');
+ replacement.allow='denied';
+ replacement.requestPermission=function(){assert.equal(completion.env.gesture,true);this.permission=this.allow;return Promise.resolve(this.allow);};
+ completion.env.selection=replacement;await completion.click('recordsDirChoose');
+ assert.equal(await completion.api.get('recordsDir.v3','','任务记录','',false),old,'A pending choice leaves the original binding active');
+ await completion.click('directoryClose');
+ assert.equal(completion.get('directoryDialog').open,true);
+ assert.equal(completion.env.saved.get('recordsDir.v3'),old);
+ replacement.allow='granted';
+ await completion.click('directoryClose');
+ assert.equal(completion.get('directoryDialog').open,true,'Allow one-time path entry after approval');
+ assert.equal(completion.env.saved.get('recordsDir.v3'),replacement);
+ await completion.click('directoryClose');
+ assert.equal(completion.get('directoryDialog').open,false);
+ const reopened=boot({saved:completion.env.saved});
+ assert.equal(await reopened.api.get('recordsDir.v3','','任务记录','',false),replacement,'New binding survives reload');
+ const pathNotes=new Map();
+ const withPath=boot({saved:completion.env.saved,paths:pathNotes});
+ withPath.api.open();await flush();
+ const field=withPath.get('recordsDirPath');
+ field.value='"E:/demo/任务记录"';field.onchange();
+ assert.equal(boot({saved:completion.env.saved,paths:pathNotes}).get('recordsDirPath').value,field.value);
+ replacement.isSameEntry=async other=>other===replacement;
+ withPath.env.selection=replacement;await withPath.click('recordsDirChoose');
+ assert.equal(withPath.env.calls[0].startIn,replacement);
+ assert.equal(field.value,'E:/demo/任务记录');
+ withPath.env.selection=handle('任务记录','granted','different');await withPath.click('recordsDirChoose');
+ assert.equal(field.value,'','A path note never carries over to a different folder');
  const unsupported=boot({supported:false});unsupported.api.open();await flush();assert.equal(unsupported.get('recordsDirChoose').disabled,true);assert.match(unsupported.get('directoryMessage').textContent,/不支持/);
  app.env.backup=true;await app.click('directoryBackup');assert.match(app.get('directoryMessage').textContent,/写入检查通过/);app.env.backup=false;await app.click('directoryBackup');assert.match(app.get('directoryMessage').textContent,/未能写入/);
  app.env.selection=Object.assign(Error('blocked'),{name:'SecurityError'});await app.click('recordsDirChoose');assert.match(app.get('directoryMessage').textContent,/浏览器拦截/);assert.equal(app.env.saved.get('recordsDir.v3'),next);

@@ -566,21 +566,116 @@ footer b{color:var(--dim)}
 <link rel="stylesheet" href="assets/task-directories.css">
 <link rel="stylesheet" href="assets/theme-warm.css">
 <link rel="stylesheet" href="assets/banner-library.css">
-</head>
+<style>
+.workspace-actions .wallet-chip{display:inline-flex;align-items:center;gap:.65em;font-variant-numeric:tabular-nums}
+.wallet-chip strong{font-size:.95em;padding-left:.65em;border-left:1px solid var(--line2)}
+[data-sign="plus"]{color:#80ded5}[data-sign="minus"]{color:#ffad99}
+html[data-theme="light"] [data-sign="plus"]{color:#236b59}html[data-theme="light"] [data-sign="minus"]{color:#a13f31}
+#walletDialog{box-sizing:border-box;width:min(380px,92vw);max-height:82dvh;overflow:auto;padding:22px;background:var(--panel);color:var(--ink);border:1px solid var(--line2);border-radius:12px}
+#walletDialog::backdrop{background:#10182088}
+#walletDialog header,#walletLines{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#walletDialog h2{font-size:19px;margin:0}#walletDialog p,#walletDialog details{font-size:13px;line-height:1.65}
+#walletLines{display:grid;grid-template-columns:1fr auto;margin:14px 0;padding:14px 0;border-block:1px solid var(--line)}
+#walletLines dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:760px){.workspace-topline,.workspace-actions{flex-wrap:wrap}.workspace-actions .wallet-chip{min-height:34px}}
+</style><style>
+#petStage{position:relative;display:block;background:none;border:0;padding:0;cursor:pointer;color:inherit}
+#fishCorner{position:relative}
+html[data-view="focus"] #fishCorner{display:none}
+@media(max-width:1000px){html[data-view="focus"] .workspace-rail .rail-bottom{display:none}}
+#petStage{width:min(90%,clamp(64.8px,calc(77.4vh - 378px),169.2px));aspect-ratio:200/232;margin:0 auto;left:-8px}
+@media(min-width:1001px){.workspace-rail .rail-bottom{padding-inline:0;padding-top:6px}.rail-bottom .clock{padding-inline:10px;margin-top:6px}}
+#petStage[hidden],#quickRice[hidden]{display:none}
+.petSprite{position:relative;display:block;width:100%;height:100%;overflow:clip;background:url("assets/dsh-fish-v1/idle-poster.png") 50% 69.23%/auto 126% no-repeat}
+.petSprite.playing{background:none}.fishDeck{position:absolute;inset:0;pointer-events:none}
+.fishDeck video{position:absolute;top:-18%;left:50%;transform:translateX(-50%);height:126%;width:auto;aspect-ratio:16/9;max-width:none;pointer-events:none}
+.fishDeck video{visibility:hidden}.fishDeck video.front{visibility:visible}
+.petProp{position:absolute;bottom:2%;left:1%;font-size:18px;pointer-events:none}
+#fishCorner{isolation:isolate;box-sizing:border-box;padding:37px 0 12px}
+#fishCorner:has(#petStage[hidden]){padding-bottom:0}
+#fishCorner:has(#petStage[hidden]):has(#petPanel:popover-open){min-height:var(--fish-open-height,170px)}
+.fishFeedRow{position:absolute;right:3px;top:3px;z-index:1;display:inline-flex;align-items:center;gap:1px;padding:3px}
+.fishFeedRow::before{content:"";position:absolute;inset:5px 3px;pointer-events:none;border-radius:999px;background:color-mix(in srgb,var(--mut) 5%,transparent);border:1px solid transparent}
+.fishFeedRow:is(:hover,:focus-within,:has([aria-expanded="true"]))::before{background:var(--panel);border-color:color-mix(in srgb,var(--line2) 72%,transparent)}
+.fishTool,.fishClose{display:inline-grid;place-items:center;background:transparent;border:1px solid transparent;color:var(--mut);cursor:pointer}
+.fishTool{position:relative;overflow:hidden;width:30px;height:28px;border-radius:999px;flex:none;padding:0}
+.fishClose:hover{color:var(--ink);background:var(--panel);border-color:var(--line2)}
+.fishTool:hover,.fishTool:focus-visible,.fishTool[aria-expanded="true"]{color:var(--ink)}
+#quickRice:not(:hover):not(:focus-visible) img{opacity:.78}
+@media(prefers-reduced-motion:no-preference){.fishFeedRow::before{transition:background-color 140ms,border-color 140ms}#quickRice img{transition:opacity 140ms}}
+.fishTool:disabled{opacity:.5;cursor:default}
+.fishTool:focus-visible,.fishClose:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+/* The painted bowl is centred at (50%, 73%) within its transparent canvas. */
+#quickRice img{position:absolute;left:50%;top:50%;width:27px;height:27px;max-width:none;transform:translate(-50%,-73%);pointer-events:none}
+#petSettings svg{width:15px;height:15px}
+#fishHint{position:absolute;inset:auto 0 0;font-size:11px;line-height:1.15;color:var(--mut);text-align:center;pointer-events:none}
+#fishCorner:has(#petPanel:popover-open)::before{content:"";position:absolute;inset:0;z-index:-1;border:1px solid var(--line2);border-right:0;border-radius:15px 0 0 15px;background:var(--panel)}
+#fishCorner:has(#petPanel:popover-open) #fishHint{visibility:hidden}
+#petPanel{box-sizing:border-box;position:fixed;inset:auto;margin:0;max-width:none;max-height:none;overflow:hidden;padding:10px 16px 12px;border:1px solid var(--line2);border-left:0;border-radius:0 15px 15px 0;background:var(--panel);color:var(--ink);font-family:inherit;font-size:13px;text-align:left}
+#petPanel:popover-open{display:flex;flex-direction:column}
+#petPanel:popover-open{animation:fishUnfold 155ms ease-out}
+@keyframes fishUnfold{from{clip-path:inset(0 100% 0 0 round 0 14px 14px 0)}to{clip-path:inset(0 round 0 14px 14px 0)}}
+@media(prefers-reduced-motion:reduce){#petPanel:popover-open{animation:none}}
+#petPanel header,.petShopRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#petTitle{font-size:16px;color:var(--ink);margin:0 auto 0 0}
+.petSwitch{display:flex;align-items:center;gap:4px;color:var(--mut);font-size:12px;white-space:nowrap}
+.fishClose{border-radius:7px;width:26px;height:26px;font:20px/1 sans-serif;padding:0}
+.fishShelf{display:grid;grid-template-columns:1fr 1.25fr 1fr;flex:1;min-height:0;margin-top:8px;border-top:1px solid var(--line);padding-top:8px;gap:14px}
+.fishShelf>section{min-width:0;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain}
+.fishShelf>section+section{border-left:1px solid var(--line);padding-left:14px}
+#petPanel h3{margin:0 0 5px;color:var(--ink);font-size:13px}
+#petPanel .hbtn{min-height:24px;padding:3px 8px;white-space:nowrap}
+.petShopRow{padding:3px 0;font-size:12px}
+#petNotice{min-width:0;max-width:48%;margin:0 auto 0 0;font-size:12px;color:var(--mut)}#petNotice:empty{display:none}
+#petPanel select,#petPanel textarea{box-sizing:border-box;font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:3px 5px;max-width:100%}
+#lanternForm{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:start;align-items:center;gap:5px}
+#lanternForm h3,#fishQuote{grid-column:1/-1}
+#fishNote{width:100%;min-height:30px;resize:vertical}
+#petPanel #fishKeepsakes{margin-top:8px;font-size:12px}#fishKeepsakes summary{cursor:pointer}
+@media(max-width:1000px){
+ .workspace-rail .rail-bottom{display:block;flex:0 0 100%;padding:0;margin:0}
+ .workspace-rail .rail-bottom .clock{display:none}
+ #fishCorner{width:100px}#petStage{width:76px;left:0}
+}
+@media(max-width:800px){
+ #petPanel{padding:7px 8px}
+ #petPanel header{gap:4px}#petTitle{font-size:14px;white-space:nowrap}
+ .fishShelf{display:block;overflow:auto;scrollbar-width:thin}
+ .fishShelf>section{overflow:visible}
+ .fishShelf>section+section{padding:7px 0 0;border-left:0;margin-top:7px;border-top:1px solid var(--line)}
+ #petNotice{max-width:100%;order:4;flex-basis:100%}#petPanel header{flex-wrap:wrap}
+}
+ #fishMemories,.fishTickets{list-style:none;margin:8px 0;padding:0;font-size:12px;overflow-wrap:anywhere}
+ #fishMemories{max-height:13em;overflow:auto}#fishMemories li,.fishTickets li{border-inline-start:2px solid var(--line2);padding:3px 8px;margin:4px 0}
+ .petSr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+</style></head>
 <body>
 <div id="emberLayer"></div>
 <aside class="workspace-rail">      <div class="brand">
         <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" focusable="false"><path d="M9.5 12.5h8a5 5 0 0 1 5 5v10a6 6 0 0 1 6-6h2.5M9.5 19.5h5a3.5 3.5 0 0 1 3.5 3.5v5" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="13" r="1.8" fill="currentColor"/></svg></span>
         <h1>行间</h1>
       </div>
-<div class="rail-section-label">工作空间</div><nav class="workspace-nav" aria-label="工作空间"><button type="button" class="rail-current view-link" id="viewDashboard" aria-current="page" aria-controls="dashboardView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> 今日工作台 <i></i></button><button type="button" class="view-link" id="viewLibrary" aria-controls="libraryView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="15" height="16" rx="2"/><path d="M7 2h12a2 2 0 0 1 2 2v12M6 16l4-4 3 3 2-2 3 3"/><circle cx="8" cy="9" r="1"/></svg> 灵感馆 <i></i></button><button type="button" class="view-link focus-nav" id="viewFocus" aria-controls="focusView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> 专注舱 <small id="focusNavStatus"></small><i></i></button><button type="button" class="view-link" id="viewGarden" aria-controls="gardenView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12c4-7 10-7 15 0-5 7-11 7-15 0Z M19 12l3-4v8l-3-4M1 19c3-2 5 2 8 0s5 2 8 0"/><circle cx="8" cy="11" r=".8"/></svg> 锦鲤庭 <i></i></button><button type="button" class="view-link" id="viewNotes" aria-controls="notesView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9l-7 7Z M14 21v-5a2 2 0 0 1 2-2h5M7 8h10M7 12h5"/></svg> 便签 <i></i></button></nav><div class="rail-actions"><button class="hbtn" id="btnDrawer">📜 归档</button><button class="hbtn" id="btnBindDir" title="选择 任务记录，并选择归档文件夹。每月 1 日把上月记录归入 归档\对应年\对应月\01_工作日志">📁 绑定目录</button></div><div class="rail-bottom">      <div class="clock">
+<div class="rail-section-label">工作空间</div><nav class="workspace-nav" aria-label="工作空间"><button type="button" class="rail-current view-link" id="viewDashboard" aria-current="page" aria-controls="dashboardView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> 今日工作台 <i></i></button><button type="button" class="view-link" id="viewLibrary" aria-controls="libraryView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="15" height="16" rx="2"/><path d="M7 2h12a2 2 0 0 1 2 2v12M6 16l4-4 3 3 2-2 3 3"/><circle cx="8" cy="9" r="1"/></svg> 灵感馆 <i></i></button><button type="button" class="view-link focus-nav" id="viewFocus" aria-controls="focusView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg> 专注舱 <small id="focusNavStatus"></small><i></i></button><button type="button" class="view-link" id="viewGarden" aria-controls="gardenView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12c4-7 10-7 15 0-5 7-11 7-15 0Z M19 12l3-4v8l-3-4M1 19c3-2 5 2 8 0s5 2 8 0"/><circle cx="8" cy="11" r=".8"/></svg> 锦鲤庭 <i></i></button><button type="button" class="view-link" id="viewNotes" aria-controls="notesView"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9l-7 7Z M14 21v-5a2 2 0 0 1 2-2h5M7 8h10M7 12h5"/></svg> 便签 <i></i></button></nav><div class="rail-actions"><button class="hbtn" id="btnDrawer">📜 归档</button><button class="hbtn" id="btnBindDir" title="选择 「任务记录」，并选择归档文件夹。每月 1 日把上月记录归入 归档\对应年\对应月\01_工作日志">📁 绑定目录</button></div><div class="rail-bottom"><div id="fishCorner"><button id="petStage" data-pose="rest" aria-label="和大肥鱼打招呼"><span class="petSprite"></span><span class="petProp" aria-hidden="true"></span></button><span id="fishHint" role="status"></span><div class="fishFeedRow" role="group" aria-label="大肥鱼互动"><button type="button" class="fishTool" id="quickRice" aria-label="喂白米饭，1 行间币"><img src="assets/dsh-fish-v1/bowl-full.png" alt=""></button><button type="button" id="petSettings" class="fishTool" aria-label="大肥鱼设置" title="大肥鱼设置" aria-controls="petPanel" aria-expanded="false" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 4 .6-2h3.8l.6 2 2 .9 2.1-.5 1.9 3.2-1.5 1.6.2 2.4 1.4 1.6-1.9 3.3-2.1-.5-2 1-.7 2.1h-3.8l-.6-2.1-2-1-2.1.5L3.5 15l1.5-1.6v-2.3L3.5 9.5l1.9-3.3 2.1.5z" transform="translate(0 1)"/><circle cx="12" cy="12" r="3"/></svg></button></div><section popover="manual" role="dialog" id="petPanel" aria-labelledby="petTitle"><header><h2 id="petTitle">大肥鱼</h2><p id="petNotice" role="status"></p><label class="petSwitch"><input type="checkbox" id="petEnabled"> 显示大肥鱼</label><button class="fishClose" type="button" aria-label="收起大肥鱼设置" id="petClose">×</button></header><div class="fishShelf"><section aria-labelledby="feedTitle">
+<h3 id="feedTitle">一起歇会儿</h3>
+<div class="petShopRow"><span>白米饭</span><button class="hbtn" id="feedRice">喂一碗 · 1 币</button></div>
+<div class="petShopRow"><label><span class="petSr">选择点心</span><select id="fishSnack"><option value="riceball">饭团</option><option value="icecream">冰淇淋</option><option value="hawthorn">糖葫芦</option></select></label><button class="hbtn" id="buySnack">请吃点心 · 10 币</button></div>
+<div class="petShopRow"><span>一起放风筝</span><button class="hbtn" id="flyKite">放风筝 · 30 币</button></div>
+</section>
+<section id="lanternForm" aria-labelledby="lampHeading"><h3 id="lampHeading">收工放河灯</h3>
+<select id="fishQuote" aria-label="从今日总结选一句"></select>
+<textarea id="fishNote" aria-label="灯上寄语（可留空）" placeholder="写句寄语（可留空）" rows="1"></textarea>
+<button class="hbtn" id="floatLantern">放河灯 · 50 币</button></section>
+<section id="fishAlbum" aria-labelledby="albumHeading"><h3 id="albumHeading">回忆册</h3><ul id="fishMemories"></ul>
+<details id="fishKeepsakes" hidden><summary>已购纪念品</summary><p id="petShop"></p></details></section></div></section></div>      <div class="clock">
         <div class="hm" id="clock">--<b>:</b>--</div>
         <div class="dt" id="dateline">——</div>
       </div>
 </div></aside>
 <main>
   <!-- 顶部 HUD -->
-  <div class="workspace-topline"><span>行间 <i>/</i> <span id="workspaceLocation">今日工作台</span></span><div class="workspace-actions"><button type="button" class="hbtn theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="亮色主题"><span id="themeIcon" aria-hidden="true">☾</span><span id="themeLabel" aria-hidden="true">暗色</span></button><button class="hbtn primary" id="btnSettle">⚔ 结算今日 → 新的一天</button></div></div>
+  <div class="workspace-topline"><span>行间 <i>/</i> <span id="workspaceLocation">今日工作台</span></span><div class="workspace-actions"><button type="button" class="hbtn wallet-chip" id="walletOpen" aria-haspopup="dialog"><span>行间币 <b id="walletBalance">0</b></span><strong id="walletToday">今日 0</strong></button><button type="button" class="hbtn theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="亮色主题"><span id="themeIcon" aria-hidden="true">☾</span><span id="themeLabel" aria-hidden="true">暗色</span></button><button class="hbtn primary" id="btnSettle">⚔ 结算今日 → 新的一天</button></div></div>
+
+  <dialog id="walletDialog" aria-labelledby="walletTitle"><header><h2 id="walletTitle">行间币账本</h2><button type="button" class="hbtn" id="walletClose">关闭</button></header><p id="walletStatus"></p><dl id="walletLines"></dl><p id="walletForecast"></p><details><summary>收支规则</summary><p>每日首次任务操作 +10。每完成一条任务 +20，超时同奖，撤销完成收回 20。今日总结含至少 6 个文字或数字 +50，结算前清空或不足 6 字时收回。</p><p>结算时，今日计划非空且全部完成 +200，否则每条未完成 −20。待办池不扣款。余额可为负数，每个工作日只结算一次。</p></details></dialog>
   <div id="dashboardView">
   <header class="hud">
     <div class="hero-copy"><div class="eyebrow"><span></span> THE DAILY PRACTICE</div><div class="headline-area">
@@ -614,7 +709,7 @@ footer b{color:var(--dim)}
   <div class="board-topline"><span class="section-kicker">01 <b>任务空间</b></span><div class="priority-key"><span class="chip prio-legend" title="条目颜色由优先级决定"><i style="background:var(--rose)"></i>P0 紧急</span>
 <span class="chip prio-legend" title="条目颜色由优先级决定"><i style="background:var(--gold)"></i>P1 重要</span>
 <span class="chip prio-legend" title="条目颜色由优先级决定"><i style="background:var(--teal)"></i>P2 常规</span>
-<span class="chip" title="每日 MD 写入 任务记录。换过文件夹后请点一次「绑定目录」">⬇ <b>任务记录/</b></span></div></div>
+<span class="chip" title="每日 MD 写入 「任务记录」。换过文件夹后请点一次「绑定目录」">⬇ <b>任务记录/</b></span></div></div>
   <!-- 双栏:今日计划 ⇄ 待办列表 -->
   <section class="board">
     <div class="panel main" data-p="main">
@@ -705,6 +800,7 @@ footer b{color:var(--dim)}
     <div class="summary-body">
       <div class="sumleft">
         <textarea id="summaryText" placeholder="记录今日心得:版本推进卡在哪?哪场评审最有收获?明天的第一优先级是什么?&#10;——内容会自动保存,结算时随当日一起归档。"></textarea>
+        <ul id="fishTodayTickets" class="fishTickets" aria-label="今日活动小票" hidden></ul>
         <div class="foot">
           <span class="wcnt" id="wcnt">0 字</span>
           <span class="saved" id="saved">✓ 已自动保存</span>
@@ -717,7 +813,7 @@ footer b{color:var(--dim)}
     </div>
   </section>
 
-  <footer><b>数据保存在当前浏览器 · 可选绑定「任务记录」和「归档」目录，保存每日 Markdown 并按月归档</b></footer>
+  <footer><b>数据保存在本浏览器 localStorage · 每日 MD 写入 「任务记录」 · 自 2026-10 起，每月 1 日把上月记录归入 归档\年\年-月\01_工作日志</b></footer>
   </div>
 
 
@@ -821,9 +917,9 @@ footer b{color:var(--dim)}
   </div>
 </div>
 <dialog id="directoryDialog" class="directory-dialog" aria-labelledby="directoryHeading">
-  <h2 id="directoryHeading">绑定目录</h2><p class="directory-intro">分别选择两个文件夹。浏览器刷新后如需再次授权，可在这里恢复连接。</p>
-  <section class="directory-row"><div><h3>任务记录</h3><p id="recordsDirStatus" role="status">正在读取…</p><code>任务记录</code><p>每日 MD 与任务自动备份</p></div><div><button type="button" class="hbtn" id="recordsDirChoose">选择 / 更换</button><button type="button" class="hbtn" id="recordsDirAuthorize" hidden>重新授权</button></div></section>
-  <section class="directory-row"><div><h3>归档</h3><p id="archiveDirStatus" role="status">正在读取…</p><code>归档</code><p>跨月归档按 年 / 年-月 / 01_工作日志 保存</p></div><div><button type="button" class="hbtn" id="archiveDirChoose">选择 / 更换</button><button type="button" class="hbtn" id="archiveDirAuthorize" hidden>重新授权</button></div></section>
+  <h2 id="directoryHeading">绑定目录</h2><p class="directory-intro">请选择名称对应的文件夹。选中后如果还需要写入授权，点“完成”可继续。</p>
+  <section class="directory-row"><div><h3>任务记录</h3><p id="recordsDirStatus" role="status">正在读取…</p><code>当前路径</code><input id="recordsDirPath" class="directory-path" type="text" aria-label="任务记录当前路径" placeholder="粘贴实际路径，仅需记录一次" spellcheck="false"><p>每日 MD 与任务自动备份</p></div><div><button type="button" class="hbtn" id="recordsDirChoose">选择 / 更换</button><button type="button" class="hbtn" id="recordsDirAuthorize" hidden>重新授权</button></div></section>
+  <section class="directory-row"><div><h3>归档</h3><p id="archiveDirStatus" role="status">正在读取…</p><code>当前路径</code><input id="archiveDirPath" class="directory-path" type="text" aria-label="归档当前路径" placeholder="粘贴实际路径，仅需记录一次" spellcheck="false"><p>跨月归档按 年 / 年-月 / 01_工作日志 保存</p></div><div><button type="button" class="hbtn" id="archiveDirChoose">选择 / 更换</button><button type="button" class="hbtn" id="archiveDirAuthorize" hidden>重新授权</button></div></section>
   <p class="directory-message" id="directoryMessage" role="status"></p><div class="directory-footer"><button type="button" class="hbtn" id="directoryBackup">检查写入并备份任务</button><button type="button" class="hbtn primary" id="directoryClose">完成</button></div>
 </dialog>
 <div id="toastbox"></div>
@@ -886,6 +982,105 @@ function stateScore(s){
   if(!s||!s.date) return -1;
   return (s.archives||[]).length*10000+(s.main||[]).length*100+(s.side||[]).length*10+String(s.summary||'').length;
 }
+// Each earning has a stable key. Reloads and other tabs see the same posting.
+const wallet=(()=>{
+ const prefix='gpdQuestLog.wallet.v1.', startKey=prefix+'start';
+ const el=id=>document.getElementById(id);
+ const signed=n=>n>0?'+'+n:String(n);
+ let start='',fault=false,cachedTotals=null;
+ try{start=localStorage.getItem(startKey)||todayStr();localStorage.setItem(startKey,start);}
+ catch{fault=true;}
+ function read(key){const value=localStorage.getItem(prefix+key);return value===null?null:JSON.parse(value);}
+ function snapshot(){
+  const entries={};
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   if(key?.startsWith(prefix)&&key!==startKey)entries[key.slice(prefix.length)]=read(key.slice(prefix.length));
+  }
+  return {start,entries};
+ }
+ function restore(saved){
+  if(!saved?.entries||!saved.start||Object.keys(snapshot().entries).length)return;
+  const items=Object.entries(saved.entries);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(saved.start)||items.some(([k,v])=>
+   !v||!['activity','summary','task','close','pet'].includes(v.kind)||!k.startsWith(v.kind+'/')||
+   !Number.isSafeInteger(v.amount)||!/^\d{4}-\d{2}-\d{2}$/.test(v.date)))return;
+  for(const [k,v] of items)localStorage.setItem(prefix+k,JSON.stringify(v));
+  cachedTotals=null;
+  start=saved.start;localStorage.setItem(startKey,start);
+ }
+ function post(key,date,amount,kind,extra={}){
+  if(date<start||read('close/'+date))return false;
+  const old=read(key);
+  if(old?.date!==undefined&&old.date!==date&&old.amount)return false;
+  if((old?.amount||0)===amount&&kind!=='close')return false;
+  localStorage.setItem(prefix+key,JSON.stringify({date,amount,kind,...extra}));
+  cachedTotals=null;
+  return true;
+ }
+ function summary(date,text){post('summary/'+date,date,(String(text||'').match(/[\p{L}\p{N}]/gu)||[]).length>=6?50:0,'summary');}
+ function forecast(main){
+  const missed=main.filter(i=>!i.done).length;
+  return {missed,amount:missed?-20*missed:main.length?200:0};
+ }
+ function update(action){
+  try{action();fault=false;}catch{fault=true;}
+  paint();
+ }
+ function paint(){
+  const date=todayStr();
+  try{
+   if(cachedTotals?.date!==date){
+    const rows={activity:0,task:0,summary:0,close:0,pet:0};let balance=0;
+    for(const e of Object.values(snapshot().entries)){balance+=e.amount;if(e.date===date)rows[e.kind]+=e.amount;}
+    cachedTotals={date,rows,balance};
+   }
+   const {rows,balance}=cachedTotals;
+   const net=Object.values(rows).reduce((a,b)=>a+b,0);
+   el('walletBalance').textContent=balance;
+   const badge=el('walletToday');
+   badge.textContent='今日 '+signed(net);
+   badge.dataset.sign=net>0?'plus':net<0?'minus':'';
+   el('walletStatus').textContent='余额 '+balance+' 币 · 今日净变化 '+signed(net)+' 币';
+   if(!el('walletDialog').open&&!fault)return;
+   const lines=el('walletLines');lines.replaceChildren();
+   for(const [label,n] of [['首次任务操作',rows.activity],['完成任务',rows.task],['今日总结',rows.summary],['计划结算',rows.close],['大肥鱼小铺',rows.pet]]){
+    const term=document.createElement('dt'),value=document.createElement('dd');
+    term.textContent=label;value.textContent=signed(n);lines.append(term,value);
+   }
+   const closed=read('close/'+date),f=forecast(S.date===date?S.main:[]);
+   el('walletForecast').textContent=closed?'本日已结算 · 计划收支 '+signed(closed.amount)+' 币':('若现在结算：'+(f.missed?f.missed+' 条未完成，':'')+signed(f.amount)+' 币（待入账）');
+  }catch{fault=true;}
+  if(fault){el('walletToday').textContent='账本不可用';el('walletStatus').textContent='浏览器存储不可用，请检查空间和存储权限。';}
+ }
+ el('walletOpen').onclick=()=>{el('walletDialog').showModal();paint();};
+ el('walletClose').onclick=()=>el('walletDialog').close();
+ window.addEventListener('storage',e=>{if(!e.key||e.key.startsWith(prefix)){cachedTotals=null;paint();}});
+ return {paint,snapshot,restore,
+  ownsPet(id){return !!read('pet/'+id);},
+  async petActivity(activity, show){
+   return navigator.locks.request('hangjian-pet-purchase',{ifAvailable:true},async lock=>{
+    if(!lock)return 'busy';
+    const balance=()=>Object.values(snapshot().entries).reduce((n,e)=>n+e.amount,0);
+    if(balance()<activity.price)return 'poor';
+    const date=todayStr();
+    if(!await show())return 'cancelled';
+    if(balance()<activity.price)return 'poor';
+    const receipt={kind:'pet',amount:-activity.price,date,activity:activity.id,time:Date.now()};
+    if(activity.note)receipt.note=activity.note;
+    localStorage.setItem(prefix+'pet/visit/'+crypto.randomUUID(),JSON.stringify(receipt));
+    cachedTotals=null;paint();writeStateBackup(false);return 'done';
+   });
+  },
+  activity(){update(()=>post('activity/'+S.date,S.date,10,'activity'));},
+  toggle(task){let changed=false;update(()=>{changed=post('task/'+task.id,S.date,task.done?20:0,'task');});return changed;},
+  summary(){update(()=>summary(S.date,S.summary));},
+  close(arch){
+   update(()=>{summary(arch.date,arch.summary);const f=forecast(arch.main);post('close/'+arch.date,arch.date,f.amount,'close',{missed:f.missed});});
+   try{return read('close/'+arch.date)?.amount??0;}catch{return 0;}
+  }
+ };
+})();
 let backupTimer=null;
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
@@ -898,7 +1093,9 @@ async function writeStateBackup(interactive){
     if(!dir) return false;
     const f=await dir.getFileHandle('gpdQuestLog_autosave.json',{create:true});
     const w=await f.createWritable();
-    await w.write(JSON.stringify(S));
+    const backup={...S};
+    try{backup.wallet=wallet.snapshot();}catch{}
+    await w.write(JSON.stringify(backup));
     await w.close();
     return true;
   }catch(e){return false}
@@ -918,6 +1115,8 @@ async function tryRestoreFromDiskBackup(){
       }catch(e2){return false}
     }
     const disk=JSON.parse(await file.text());
+    try{wallet.restore(disk.wallet);}catch{}
+    delete disk.wallet;
     const diskScore=stateScore(disk);
     if(diskScore<0) return false;
     const canReplaceExamples=hasOnlyExampleTasks(S)||(IS_NEW&&!load());
@@ -929,8 +1128,9 @@ async function tryRestoreFromDiskBackup(){
 }
 /* DIRECTORY_BINDING_START */
 const IDB_NAME='questLogDirs', IDB_STORE='handles';
-const RECORDS_DIR_HINT='「任务记录」文件夹';
-const ARCHIVE_DIR_HINT='「归档」文件夹';
+const RECORDS_DIR_HINT='「任务记录」';
+const ARCHIVE_DIR_HINT='「归档」';
+const ARCHIVE_START_YM='2026-10';
 function idbOpen(){return new Promise((res,rej)=>{const q=indexedDB.open(IDB_NAME,1);
   q.onupgradeneeded=()=>q.result.createObjectStore(IDB_STORE);
   q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
@@ -1242,7 +1442,7 @@ function render(){
     :`<div class="empty">${S.side.length?'当前筛选下没有任务':'待办池空空如也'}<small>${S.side.length?'点上方分类标签可切换筛选':'随手记下的事项都会在这里囤着'}</small></div>`;
   document.getElementById('cntMain').textContent=filterMain?`${visM.length}/${S.main.length}`:S.main.length;
   document.getElementById('cntSide').textContent=filterSide?`${visS.length}/${S.side.length}`:S.side.length;
-  paintFilters(); paintHUD(); paintBuffs();
+  paintFilters(); paintHUD(); paintBuffs(); wallet.paint();
   if(editingId)document.querySelector(`[data-id="${editingId}"] .ed-title`)?.focus();
   if(openNoteId)document.querySelector(`[data-id="${openNoteId}"] .qnote-ta`)?.focus();
 }
@@ -1254,6 +1454,7 @@ function paintFilters(){
 }
 document.querySelectorAll('.fbtn').forEach(b=>b.addEventListener('click',()=>{
   const p=b.closest('.panel').dataset.p, f=b.dataset.f||null;
+  wallet.activity();
   if(p==='main')filterMain=(filterMain===f)?null:f; else filterSide=(filterSide===f)?null:f;
   render();
 }));
@@ -1313,7 +1514,7 @@ function bindAdd(btnId,inputId,bodyId,catSel,prioSel,dueSel,timeEl,list){
     const t=input.value.trim(); if(!t) return;
     const it={id:uid(),text:t,body:bodyEl.value.trim(),cat:catSel.value,prio:prioSel.value,
       due:dueSel?dueSel.value||'':'',time:timeEl?timeEl.value||'':'',note:'',done:false,doneAt:'',delayMin:0,from:null};
-    S[list].push(it);
+    S[list].push(it);wallet.activity();
     input.value=''; bodyEl.value=''; if(timeEl)timeEl.value=''; if(dueSel)dueSel.value=''; save(); render();
     const el=document.querySelector(`[data-id="${it.id}"]`);
     if(el)el.classList.add('flash');
@@ -1332,6 +1533,7 @@ document.querySelectorAll('.qlist').forEach(ul=>{
     const btn=e.target.closest('[data-act]');
     if(!btn||!hit){return}
     const act=btn.dataset.act;
+    wallet.activity();
     if(act==='cleartime'){                  // 清除预计完成时间(今日计划)
       if(!hit.i.time)return;
       hit.i.time='';
@@ -1402,10 +1604,12 @@ document.querySelectorAll('.qlist').forEach(ul=>{
         hit.i.doneAt=''; hit.i.delayMin=0;
       }
       const origin=hit.i.done?btn.getBoundingClientRect():null;
+      const credited=wallet.toggle(hit.i);
+      if(hit.i.done)window.dispatchEvent(new Event('pet:task'));
       save(); render();
       if(hit.i.done){
         document.querySelector(`[data-id="${id}"]`)?.classList.add('justdone');
-        xpFloat(origin.left+origin.width/2,origin.top,'+'+(hit.i.prio==='P0'?30:hit.i.prio==='P1'?20:10)+' XP');
+        if(credited)xpFloat(origin.left+origin.width/2,origin.top,'+20 币');
         const left=[...S.main,...S.side].filter(i=>!i.done).length;
         if(left===0)toast('🏆 今日任务全部完成,干杯!');
         else if(hit.i.delayMin>0)toast('🐢 延迟 '+fmtDelay(hit.i.delayMin)+' 完成');
@@ -1418,7 +1622,7 @@ document.querySelectorAll('.qlist').forEach(ul=>{
   ul.addEventListener('input',e=>{          // 备注输入即存
     if(!e.target.classList.contains('qnote-ta'))return;
     const hit=findItem(e.target.closest('.qcard')?.dataset.id); if(!hit)return;
-    hit.i.note=e.target.value; save();
+    hit.i.note=e.target.value; wallet.activity(); save();
   });
   ul.addEventListener('keydown',e=>{        // 编辑表单:Ctrl+Enter 保存,Esc 取消
     if(!e.target.closest('.qedit-form'))return;
@@ -1437,7 +1641,7 @@ document.querySelectorAll('.qlist').forEach(ul=>{
     e.preventDefault(); ul.classList.remove('dragover');
     const id=e.dataTransfer.getData('text/plain')||document.querySelector('.qcard.dragging')?.dataset.id;
     const hit=findItem(id); if(!hit)return;
-    const target=ul.dataset.list;
+    const target=ul.dataset.list;wallet.activity();
     if(hit.k!==target){                       // 跨栏挪动:清除完成时间,可重新设定
       S[hit.k]=S[hit.k].filter(x=>x.id!==id);
       hit.i.time='';
@@ -1469,7 +1673,7 @@ sumEl.addEventListener('input',()=>{
   S.summary=sumEl.value;
   document.getElementById('wcnt').textContent=sumEl.value.length+' 字';
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{save();const s=document.getElementById('saved');s.classList.add('show');setTimeout(()=>s.classList.remove('show'),1400)},450);
+  saveTimer=setTimeout(()=>{wallet.summary();save();const s=document.getElementById('saved');s.classList.add('show');setTimeout(()=>s.classList.remove('show'),1400)},450);
 });
 document.getElementById('wcnt').textContent=sumEl.value.length+' 字';
 document.getElementById('btnGoSummary')?.addEventListener('click',()=>{
@@ -1561,7 +1765,7 @@ function mdFor(date,main,side,summary,buff,mood){
   const rowMain=i=>`| ${catLabel(i.cat)} | ${i.prio} | ${cell(i)}${i.due?' (预期 '+i.due+')':''}${tInfo(i)} | ${statusMain(i)} |`;
   const rowSide=i=>`| ${catLabel(i.cat)} | ${i.prio} | ${cell(i)}${i.due?' (预期 '+i.due+')':''} |`;
   return `# 每日工作记录 — ${date}(${wk})
-> 生成于「行间 · Between Lines」
+> 职业:游戏主策划 · 生成于「行间」
 
 ## 今日计划(完成状态仅统计本区)
 | 分类 | 优先级 | 事项 | 状态 |
@@ -1684,6 +1888,8 @@ function settle(manual){
     return;
   }
   const arch=archiveObj(prevDate);
+  const coinSettlement=wallet.close(arch);
+  window.dispatchEvent(new CustomEvent('pet:settle',{detail:coinSettlement===200}));
   const done=arch.main.filter(i=>i.done).length;
   const pct=arch.main.length?Math.round(done/arch.main.length*100):0;
   pendingMd=mdFor(prevDate,arch.main,arch.side,arch.summary,arch.buff,arch.mood);
@@ -1695,7 +1901,7 @@ function settle(manual){
   S.lastArchived=prevDate;
   const {carry, dueToday}=rollToToday(prevDate);
   /* 弹窗展示昨日战报 */
-  const statRows=[['当日计划',arch.main.length],['已完成',done],['计划完成率',pct+'%'],['顺延待办',carry.length]];
+  const statRows=[['计划结算',(coinSettlement>0?'+':'')+coinSettlement+' 币'],['当日计划',arch.main.length],['已完成',done],['计划完成率',pct+'%'],['顺延待办',carry.length]];
   if(arch.side.length)statRows.push(['待办记录',arch.side.length]);
   if(dueToday.length)statRows.push(['今日到期 ↑',dueToday.length]);
   document.getElementById('mstats').innerHTML=statRows
@@ -1771,7 +1977,7 @@ function download(name,text){   // 兜底:浏览器默认下载
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),800);
 }
-/* ---- 每日 Markdown 写入已绑定的「任务记录」；较早月份可归档。 ---- */
+/* ---- 每日 MD:写入绑定的「任务记录」。上月文件在每月 1 日之后归入「归档」 ---- */
 async function saveMD(name,text,opts){
   const interactive=!(opts&&opts.interactive===false);
   const quiet=!!(opts&&opts.quiet);
@@ -1815,7 +2021,7 @@ async function repairArchiveMdFiles(){
   }
   if(n) toast(`📁 已按归档回写本月 ${n} 份任务记录 MD`);
 }
-/* 将过去月份的记录归入 归档/年/年-月/01_工作日志。 */
+/* 任务记录只留本月。2026-10 起的更早月份,在进入新月后移入 归档/年/年-月/01_工作日志 */
 async function archivePastMonthMds(){
   const dir=await getRecordsDir(false);
   if(!dir)return;
@@ -1826,7 +2032,7 @@ async function archivePastMonthMds(){
       if(!h||h.kind!=='file')continue;
       const m=String(name).match(/^(\d{4}-\d{2})-\d{2}\.md$/);
       if(!m)continue;
-      if(m[1]>=cur)continue;
+      if(m[1]<ARCHIVE_START_YM||m[1]>=cur)continue;
       names.push(name);
     }
   }catch(e){return}
@@ -1902,5 +2108,186 @@ function xpFloat(x,y,txt){
 <script src="assets/notes.js"></script>
 <script src="assets/focus-ambience.js"></script>
 <script src="assets/focus-dream.js"></script>
-</body>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id),stage=$('petStage'),corner=$('fishCorner'),settings=$('petSettings'),panel=$('petPanel'),enabled=$('petEnabled');
+ const key='hangjian.pet.';
+ const keepsakes=[['cooker','迷你电饭煲'],['whale','鲸鲸抱枕'],['toycar','掌心小汽车'],['flower','小雏菊'],['lantern','暖光灯'],['tent','露营帐']];
+ const activities={
+  rice:{clip:'吃白饭',label:'白米饭',price:1},
+  riceball:{clip:'吃饭团',label:'饭团',price:10},
+  icecream:{clip:'吃冰淇淋融化',label:'冰淇淋',price:10},
+  hawthorn:{clip:'吃糖葫芦',label:'糖葫芦',price:10},
+  kite:{clip:'放风筝',label:'一起放风筝',price:30},
+  lantern:{clip:'放河灯',label:'收工放河灯',price:50}
+ };
+ const idleClip='待机呼吸休闲';
+ const ambient=['原地蹲下玩玩具汽车','超大伸懒腰','悠闲哼歌','照镜子'];
+ const clicks=['点击回应-挠痒咯咯笑','点击回应-开心跃动','点击回应-元气挥手','点击回应-害羞惊讶'];
+ let pose='',timer=0,pending='',generation=0,front=null,lastRandom='',hintTimer=0,guard=0;
+ let visit=null, purchasing='',visitTimer=0;
+ const reduced=matchMedia('(prefers-reduced-motion:reduce)');
+ const deck=document.createElement('span');deck.className='fishDeck';
+ const videos=Array.from({length:2},()=>{const v=document.createElement('video');v.muted=true;v.playsInline=true;deck.append(v);return v;});
+ const sprite=stage.firstElementChild;
+ sprite.append(deck);
+ function canMove(){return enabled.checked&&!document.hidden&&!reduced.matches&&document.documentElement.dataset.view!=='focus'&&sprite.getClientRects().length>0;}
+ function random(pool){const choices=pool.filter(v=>v!==lastRandom);return lastRandom=choices[Math.floor(Math.random()*choices.length)];}
+ function setting(k,fallback){try{return localStorage.getItem(key+k)??fallback;}catch{return fallback;}}
+ function store(k,v){try{localStorage.setItem(key+k,v);}catch{$('petNotice').textContent='本次设置仅在当前页面生效。';}}
+ function tell(text){$('petNotice').textContent=text;$('fishHint').textContent=text;clearTimeout(hintTimer);hintTimer=setTimeout(()=>{$('fishHint').textContent='';},2200);}
+ function controls(){
+  const disabled=!!purchasing||!enabled.checked||reduced.matches;
+  const unavailable=reduced.matches?'已启用减少动态效果，付费动作暂停。':'';
+  for(const button of [ $('quickRice'),$('feedRice'),$('buySnack'),$('flyKite'),$('floatLantern') ])button.title=unavailable;
+  for(const id of ['quickRice','feedRice','buySnack','flyKite','floatLantern'])$(id).disabled=disabled;
+  $('quickRice').title=unavailable||'喂白米饭 · 1 币';
+ }
+ function endVisit(complete){
+  if(!visit)return;
+  clearTimeout(visitTimer);visit.resolve(complete);visit=null;
+ }
+ function stop(keepFrame=false){endVisit(false);generation++;clearTimeout(timer);clearTimeout(guard);pending='';pose='';
+  if(!keepFrame)front=null;
+  for(const v of videos){v.onended=v.onerror=v.onloadeddata=null;v.pause();v.classList.toggle('front',v===front);}
+  sprite.classList.toggle('playing',!!front);
+ }
+ function play(name){
+  if(!canMove()){stop();return;}
+  clearTimeout(timer);clearTimeout(guard);pose=name;
+  const token=++generation,v=videos.find(v=>v!==front);
+  function finish(){
+   if(token!==generation)return;
+   clearTimeout(guard);if(visit?.clip===name)endVisit(true);
+   const next=pending;pending='';play(next||idleClip);
+  }
+  function failed(){
+   if(token!==generation)return;
+   stop();
+   if(name!==idleClip&&canMove())play(idleClip);
+   if(!purchasing)tell('动作暂时无法播放。');
+  }
+  v.pause();v.onended=finish;v.onerror=failed;v.loop=name===idleClip;
+  v.onloadeddata=async()=>{
+   if(token!==generation)return;
+   try{await v.play();if(token!==generation)return;
+    clearTimeout(guard);if(front){front.pause();front.classList.remove('front');}
+    front=v;v.classList.add('front');sprite.classList.add('playing');
+    if(v.loop)timer=setTimeout(()=>react(random(ambient)),14000+Math.random()*14000);
+   }catch{failed();}
+  };
+  guard=setTimeout(failed,10000);v.src='assets/dsh-fish-v1/'+encodeURIComponent(name)+'.webm';v.load();
+ }
+ function react(name){if(!canMove())return;
+  if(purchasing)return;
+  if(pose&&pose!==idleClip){pending=name;return;}
+  play(name);
+ }
+ function sync(){
+  if(!canMove()){
+   stop(enabled.checked&&!reduced.matches&&document.documentElement.dataset.view==='focus');
+   return;
+  }
+  if(!pose)play(idleClip);
+ }
+ function displayMemories(){
+  const list=$('fishMemories'),today=$('fishTodayTickets');
+  const entries=Object.values(wallet.snapshot().entries)
+   .filter(e=>e.kind==='pet'&&(e.activity==='kite'||e.activity==='lantern'))
+   .sort((a,b)=>b.time-a.time);
+  list.replaceChildren();today.replaceChildren();
+  for(const e of entries){
+   const row=document.createElement('li');
+   row.textContent=e.date+' · '+activities[e.activity].label+(e.note?' · '+e.note:'');
+   list.append(row);
+   if(e.activity==='kite'&&e.date===S.date)today.append(row.cloneNode(true));
+  }
+  today.hidden=!today.childElementCount;
+  if(!entries.length){const row=document.createElement('li');row.textContent='放风筝的小票和河灯寄语会收在这里。';list.append(row);}
+ }
+ function paint(){
+  if(!stage.hidden && corner.offsetHeight)corner.style.setProperty('--fish-open-height',corner.getBoundingClientRect().height+'px');
+  stage.hidden=$('quickRice').hidden=!enabled.checked;controls();
+  const owned=keepsakes.filter(([id])=>wallet.ownsPet(id)).map(([,name])=>name);
+  $('fishKeepsakes').hidden=!owned.length;$('petShop').textContent=owned.join(' · ');
+  displayMemories();
+ }
+ function fillQuotes(){
+  const select=$('fishQuote'),previous=select.value;
+  const text=S.date===todayStr()?$('summaryText').value:'';
+  const sentences=text.match(/[^。！？!?\n]+[。！？!?]*/g)||[];
+  select.replaceChildren(new Option(sentences.length?'选择一句…':'今日总结暂无可选句子',''));
+  for(const sentence of new Set(sentences.map(t=>t.trim()).filter(Boolean)))select.add(new Option(sentence,sentence));
+  if([...select.options].some(o=>o.value===previous))select.value=previous;
+ }
+ $('fishQuote').onchange=()=>{if($('fishQuote').value)$('fishNote').value=$('fishQuote').value;};
+ function showVisit(clip){
+  if(!canMove())return false;
+  return new Promise(resolve=>{
+   visit={clip,resolve};
+   visitTimer=setTimeout(()=>{stop();sync();},60000);
+   if(pose&&pose!==idleClip){pending=clip;tell('等她做完手头的动作。');}
+   else play(clip);
+  });
+ }
+ async function buy(id){
+  if(purchasing)return;
+  if(!canMove()){tell('请在大肥鱼可播放动画时使用。');return;}
+  const activity={...activities[id],id,note:id==='lantern'?$('fishNote').value.trim():''};
+  purchasing=id;controls();tell('准备'+activity.label+'…');
+  try{
+   const result=await wallet.petActivity(activity,()=>showVisit(activity.clip));
+   if(result==='done'){
+    tell(activity.label+' · −'+activity.price+' 币');
+    if(id==='lantern'){$('fishNote').value='';$('fishQuote').value='';}
+    displayMemories();
+   }else if(result==='poor')tell('行间币不足，需要 '+activity.price+' 币。');
+   else if(result==='busy')tell('已有活动进行中，请稍后再来。');
+   else tell('活动未播完，未扣币。');
+  }catch{tell('活动未能结算，请查看行间币账本。');}
+  finally{purchasing='';controls();}
+ }
+ $('quickRice').onclick=$('feedRice').onclick=()=>buy('rice');
+ $('buySnack').onclick=()=>buy($('fishSnack').value);
+ $('flyKite').onclick=()=>buy('kite');$('floatLantern').onclick=()=>buy('lantern');
+ function load(){enabled.checked=setting('enabled','1')!=='0';paint();sync();}
+ enabled.onchange=()=>{store('enabled',enabled.checked?'1':'0');paint();sync();};
+ stage.onclick=()=>react(random(clicks));
+ function isOpen(){return panel.matches(':popover-open');}
+ function placeMenu(){
+  if(!isOpen())return;
+  const r=corner.getBoundingClientRect(),w=document.documentElement.clientWidth,h=document.documentElement.clientHeight;
+  if(!r.width||r.bottom<=0||r.top>=h){closeMenu(false);return;}
+  panel.style.left=r.right+'px';
+  panel.style.top=r.top+'px';
+  panel.style.width=Math.min(900,w-r.right-8)+'px';
+  panel.style.height=r.height+'px';
+ }
+ function closeMenu(restoreFocus){
+  if(!isOpen())return;
+  panel.hidePopover();settings.setAttribute('aria-expanded','false');
+  if(restoreFocus)settings.focus({preventScroll:true});
+ }
+ settings.onclick=()=>{
+  if(isOpen()){closeMenu(true);return;}
+  fillQuotes();paint();panel.showPopover();placeMenu();
+  settings.setAttribute('aria-expanded','true');$('petClose').focus({preventScroll:true});
+ };
+ $('petClose').onclick=()=>closeMenu(true);
+ document.addEventListener('click',e=>{if(isOpen()&&!corner.contains(e.target))closeMenu(false);});
+ document.addEventListener('keydown',e=>{if(isOpen()&&e.key==='Escape'){e.preventDefault();closeMenu(true);}});
+ document.addEventListener('focusin',e=>{if(isOpen()&&!corner.contains(e.target)&&e.target.matches(':focus-visible'))closeMenu(false);});
+ document.addEventListener('scroll',e=>{if(e.target!==panel&&!panel.contains(e.target))placeMenu();},true);
+ new ResizeObserver(placeMenu).observe(corner);
+ window.addEventListener('resize',placeMenu);
+ window.addEventListener('workspace:viewchange',()=>closeMenu(false));
+ window.addEventListener('pet:task',()=>react('点击回应-开心跃动'));
+ window.addEventListener('pet:settle',e=>react(e.detail?'工作状态-雀跃庆祝':'工作状态-清点归档'));
+ window.addEventListener('workspace:viewchange',sync);document.addEventListener('visibilitychange',sync);
+ window.addEventListener('resize',sync);
+ window.addEventListener('storage',e=>{if(!e.key||e.key.startsWith(key)||e.key.startsWith('gpdQuestLog.wallet.v1.pet/'))load();});
+ window.addEventListener('pet:settle',()=>setTimeout(displayMemories,0));
+ reduced.addEventListener('change',()=>{controls();sync();});load();
+})();
+</script></body>
 </html>
